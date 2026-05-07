@@ -1,9 +1,12 @@
 // to create new branch
 git checkout -b branch name
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> e43169140eb4b75a1bb457a6f538eae13d9d9305
 //to run frontend
 npm install ( package )
 npm run dev
