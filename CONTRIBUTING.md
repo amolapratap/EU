@@ -1,12 +1,9 @@
 // to create new branch
 git checkout -b branch name
 
-<<<<<<< HEAD
 
 
 
-=======
->>>>>>> e43169140eb4b75a1bb457a6f538eae13d9d9305
 //to run frontend
 npm install ( package )
 npm run dev
@@ -47,3 +44,33 @@ pip install requests
 
 //install multipart
 pip install python-multipart
+
+
+
+<!-- Git Workflow -->
+git checkout main
+git pull
+
+git checkout -b feature/public-upload
+
+# coding...
+
+git add .
+git commit -m "Added upload submission API"
+
+git push -u origin feature/public-upload
+
+<!-- To merge into main -->
+git checkout main
+git pull
+
+git merge feature/public-upload
+
+git push
+
+<!-- To delete branch -->
+git branch -d feature/public-upload
+git push origin --delete feature/public-upload
+
+<!-- To check currunt branch -->
+git branch --show-current
