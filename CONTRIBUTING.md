@@ -48,6 +48,8 @@ pip install python-multipart
 
 
 <!-- Git Workflow -->
+
+//To rabase code from maain branch, pull
 git checkout main
 git pull
 
