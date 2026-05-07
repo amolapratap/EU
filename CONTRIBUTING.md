@@ -49,21 +49,25 @@ pip install python-multipart
 
 # Git Workflow
 
-##To rabase code from maain branch, pull
+
+## To rabase code from maain branch, pull
 git checkout main
+
 git pull
 
+## To create new branch
 git checkout -b feature/public-upload
 
 ## coding...
-
 git add .
+
 git commit -m "Added upload submission API"
 
 git push -u origin feature/public-upload
 
 ## To merge into main 
 git checkout main
+
 git pull
 
 git merge feature/public-upload
