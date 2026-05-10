@@ -1,5 +1,6 @@
 from email import message
 import re
+from app.utils.datetime import utcnow
 from app.database import db_instance
 from app.utils.mongo_serializer import mongo_to_json
 from fastapi import HTTPException
@@ -7,6 +8,7 @@ from bson import ObjectId
 from zoneinfo import ZoneInfo
 from datetime import datetime
 from pymongo import ReturnDocument
+import cloudinary.uploader
 
 
 async def list_semesters():
@@ -209,7 +211,7 @@ async def sgpa(body, current_user):
         "branch": br,
         "marks": marks,
         "sgpa": result,
-        "created_at": datetime.now(ZoneInfo("Asia/Kolkata"))
+        "created_at": utcnow()
     })
 
 
@@ -218,4 +220,175 @@ async def sgpa(body, current_user):
             "sgpa": result
         }
 
+##================PUBLIC UPLOAD==================##
+
+
+async def upload_pdf_to_cloudinary_public(
+    file_bytes: bytes,
+    public_id: str,
+    folder: str = None,
+    overwrite: bool = True
+):
+    try:
+        # Build full public_id with folder if provided
+        full_public_id = f"{folder}/{public_id}" if folder else public_id
+
+        result = cloudinary.uploader.upload(
+            file_bytes,
+            resource_type="raw",   # required for PDFs
+            public_id=full_public_id,
+            overwrite=overwrite
+        )
+
+        return {
+            "success": True,
+            "message": "uploaded Question paper pdf on cloudnari by public",
+            "secure_url": result.get("secure_url"),
+            "public_id": result.get("public_id"),
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+##==============For manage function of missing papers uploed by Pubkic=======##
+
+# To get all missing paper for publiv
+async def get_missing_papers_public(query_params):
+
+    filters = {}
+    print("req_semester_code", query_params.get("req_semester_code"))
+    if query_params.get("req_semester_code"):
+        filters["req_semester_code"] = query_params["req_semester_code"]
+        print("req_semester_code", query_params.get("req_semester_code"))
+
+    if query_params.get("branch_code"):
+        filters["branch_code"] = query_params["branch_code"]
+
+    if query_params.get("year"):
+        filters["year"] = query_params["year"]
+
+    # 🔥 Only uploadable papers
+    filters["status"] = {
+        "$in": query_params.get("status", ["missing", "rejected", "approved", "under_review"])
+    }
+
+    if query_params.get("search"):
+        filters["req_paper_code"] = {
+            "$regex": query_params["search"],
+            "$options": "i"
+        }
+
+    page = int(query_params.get("page", 1))
+    limit = int(query_params.get("limit", 20))
+    skip = (page - 1) * limit
+
+    cursor = await db_instance.db.missing_papers.find(filters) \
+        .sort("created_at", -1) \
+        .skip(skip) \
+        .limit(limit).to_list(None)
+
+    # papers = list(cursor)
+    papers = mongo_to_json(cursor)
+    
+    for p in papers:
+        # 🔥 hide sensitive fields
+        p.pop("reviewed_by", None)
+        p.pop("final_public_id", None)
+        p.pop("temp_public_id", None)
+        p.pop("created_at", None)
+        p.pop("created_by", None)
+        p.pop("reviewed_at", None)
+
+    return {
+        "success": True,
+        "message": "getted all missing papers successfully",
+        "data": papers
+    }
+
+
+#  To upload a file by public and upadate missing paper db
+async def upload_public_missing_paper(paper_id: str, file, uploader_name: str):
+
+    # ✅ Validate ObjectId
+    try:
+        obj_id = ObjectId(paper_id)
+    except:
+        return {"success": False, "error": "Invalid paper_id"}
+
+    # ✅ Fetch missing paper
+    missing_paper = await db_instance.db.missing_papers.find_one({"_id": obj_id})
+
+    if not missing_paper:
+        return {"success": False, "error": "Paper not found"}
+
+    status = missing_paper.get("status")
+
+    # 🚨 Status validation
+    if status in ["approved", "available"]:
+        raise HTTPException(400, "Paper already available")
+
+    if status in ["under_review"]:
+        raise HTTPException(
+        status_code=400,
+        detail=f"Question paper is uploaded, to be reviewed by admin"
+    )
+
+    if status not in ["missing", "rejected"]:
+        raise HTTPException(
+        status_code=400,
+        detail=f"Cannot upload in current state: {status}"
+    )
+
+    # 🔥 FILE VALIDATION
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, "Only PDF allowed")
+
+    MAX_SIZE = 10 * 1024 * 1024  # 10MB
+    file_bytes = await file.read()
+
+    if len(file_bytes) > MAX_SIZE:
+        raise HTTPException(400, "File too large (max 10MB)")
+
+
+    # UPLOAD TO CLOUDINARY (TEMP)
+     # public_id
+
+    public_id = f"PUBLIC/BEU/pyq/{missing_paper['branch_code']}/sem-{missing_paper['semester_code']}/{missing_paper['subject_code']}/{missing_paper['year']}_{missing_paper['exam_type']}_{missing_paper['paper_type']}"
+    clean_name = f"{missing_paper['subject_code']}_{missing_paper['year']}_{missing_paper['exam_type']}_{missing_paper['paper_type']}".replace(" ", "_")
+    public_id = f"{public_id}/{clean_name}.pdf"  
+
+    upload_res = await upload_pdf_to_cloudinary_public(
+        file_bytes,
+        public_id
+    )
+
+    if not upload_res.get("success"):
+        raise HTTPException(500, upload_res.get("error", "Upload failed"))
+
+    temp_url = upload_res.get("secure_url")
+    temp_public_id = upload_res.get("public_id")
+
+    # UPDATE DB
+    await db_instance.db.missing_papers.update_one(
+        {"_id": obj_id},
+        {
+            "$set": {
+                "status": "under_review",
+                "temp_pdf_url": temp_url,
+                "temp_public_id": temp_public_id,
+                "uploader_name": uploader_name,
+                "description": "Uploaded by public, pending review"
+            }
+        }
+    )
+
+    return {
+        "success": True,
+        "message": "PDF uploaded successfully, under review",
+        "uploader_name": uploader_name,
+        "status": "under_review"
+    }
 

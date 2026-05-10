@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Form, UploadFile, File, Query
 from typing import Optional
 from app.public2.controllers import *
 from app.auth.utils import get_current_user_optional
@@ -38,7 +38,7 @@ async def calculate_sgpa(body : dict, current_user: Optional[dict] = Depends(get
     return await sgpa(body, current_user)
 
 
-# To get quest. papers pdf link of one subject
+# To get quest. papers pdf link all papers of one subject
 @router.get("/papers/{subject_code}")
 async def get_papers_by_subject(subject_code: str):
     """
@@ -64,3 +64,39 @@ async def get_papers_by_subject(subject_code: str):
         "count": len(result),
         "data": result
     }
+
+##===================Routes For manage missing papers(public section)================##
+    
+# To get all missing paper list
+@router.get("/missing_papers")
+async def get_public_missing_papers(
+    req_semester_code: str = Query(None),
+    branch_code: str = Query(None),
+    year: str = Query(None),
+    search: str = Query(None),
+
+    page: int = Query(1),
+    limit: int = Query(20),
+):
+    query_params = {
+        "req_semester_code": req_semester_code,
+        "branch_code": branch_code,
+        "year": year,
+        "search": search,
+        "page": page,
+        "limit": limit,
+
+        # 🔥 IMPORTANT: restrict statuses
+        "status": ["missing", "rejected", "approved", "under_review"]
+    }
+
+    return await get_missing_papers_public(query_params)
+
+# To upload pdf question paper by public
+@router.post("/missing_papers/upload/{paper_id}")
+async def upload_public_pdf(
+    paper_id: str,
+    file: UploadFile = File(...),
+    uploader_name: str = Form(None)
+):
+    return await upload_public_missing_paper(paper_id, file, uploader_name)

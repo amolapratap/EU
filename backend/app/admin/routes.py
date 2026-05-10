@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, Query
 from app.auth.dependencies import admin_required
 from app.auth.utils import get_current_admin
 from app.admin.controllers import *
+
 
 # router = APIRouter(prefix="/ssb", tags=["Admin SSB"])
 router = APIRouter()   
@@ -83,12 +84,6 @@ async def syllabus(code: str, body: dict):
 #----------------PAPERS-------------------------------
 
 # router = APIRouter()
-
-# ---------- PAPERS ----------
-from fastapi import APIRouter, Depends
-from app.auth.dependencies import admin_required
-from app.admin.controllers import *
-
 
 # ---------- PAPERS ----------
 
@@ -240,7 +235,6 @@ async def upload_pdf(
 
 
 # To merge all papers of a subject
-
 @router.post("/merge-subject-pdfs")
 async def merge_subject(body: dict, admin=Depends(get_current_admin)):
     subject_code = body.get("subject_code")
@@ -252,4 +246,79 @@ async def merge_subject(body: dict, admin=Depends(get_current_admin)):
     return result
 
 
-    
+
+
+
+
+
+##=========================== For manage missing papers PDF uploaded by PUBLIC, handle admin   =======================##
+# To add a new paper in missing papers list
+@router.post("/add_in_missing_papers_list")
+async def add_missing_papers(body: dict, admin=Depends(get_current_admin)):
+
+    result = await create_missing_paper(body, admin)
+
+    return  result
+
+
+# To get all missing paper list
+@router.get("/missing_papers")
+async def get_missing_papers(
+    semester_code: str = Query(None),
+    branch_code: str = Query(None),
+    status: str = Query(None),
+    year: str = Query(None),
+    exam_type: str = Query(None),
+    paper_type: str = Query(None),
+    search: str = Query(None),
+
+    page: int = Query(1),
+    limit: int = Query(20),
+
+    admin=Depends(get_current_admin)
+):
+    query_params = {
+        "semester_code": semester_code,
+        "branch_code": branch_code,
+        "status": status,
+        "year": year,
+        "exam_type": exam_type,
+        "paper_type": paper_type,
+        "search": search,
+        "page": page,
+        "limit": limit
+    }
+
+    return await get_missing_papers_admin(query_params, admin)
+
+
+
+#  To approve and upload pdf to cloudnari, delete temp upload and then update papers, missing_papers 
+@router.post("/approve/{paper_id}")
+async def approve_paper(
+    paper_id: str,
+    admin=Depends(get_current_admin)
+):
+
+   result = await accept_public_upload_and_add_paper(paper_id, admin)
+
+   return result
+
+
+#  To reject public uploaded pdf
+@router.post("/reject/{paper_id}")
+async def reject_paper(
+    paper_id: str,
+    body: dict,
+    admin=Depends(get_current_admin)
+):
+    return await reject_public_uploaded_missing_paper(paper_id, body, admin)
+
+# To delete a missing paper from list of missing paper if missing or rejected
+@router.delete("/delete/{paper_id}")
+async def delete_missing_paper_route(
+    paper_id: str,
+    admin=Depends(get_current_admin)
+):
+    return await delete_missing_paper(paper_id, admin)
+

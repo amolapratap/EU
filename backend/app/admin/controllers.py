@@ -5,6 +5,8 @@ from app.utils.datetime import utcnow
 from app.config import settings
 from fastapi import HTTPException, status, UploadFile
 from fastapi.responses import StreamingResponse, Response
+from app.utils.cloudinary_config import delete_file
+from app.utils.logger import logger
 import fitz  # PyMuPDF
 from io import BytesIO
 
@@ -293,7 +295,8 @@ async def create_paper(body: dict, admin):
     doc = {
         "subject_code": body["subject_code"],
         "name": body["name"],
-        "type": body["type"],          # MID / END / QUIZ / PRACTICE
+        "type": body["type"],          # exam_type => MID / END / QUIZ / PRACTICE
+        "paper_type": body.get("paper_type"),
         "year": body["year"],
         "description": body.get("description", ""),
         "paper_pdf": body.get("paper_pdf", ""),
@@ -375,6 +378,17 @@ async def update_paper(paper_id: str, body: dict, admin):
 
 
 async def delete_paper(paper_id: str):
+
+    paper = await db_instance.db.papers.find_one({"_id": ObjectId(paper_id)})
+    paper_pdf_public_id = paper.get("paper_pdf_public_id")
+
+     # 🔥 DELETE final FILE (if exists) (if pdf uploaded by PUBLIC then its same url in missing paper as final_public and it will not work)
+    if paper_pdf_public_id:
+        try:
+            await delete_file(paper_pdf_public_id)
+        except Exception as e:
+            logger.warning(f"paper pdf delete failed: {str(e)}")
+
     await db_instance.db.papers.delete_one({"_id": ObjectId(paper_id)})
     return {"success": True,"message": "Paper deleted successfully"}
 
@@ -851,3 +865,381 @@ async def merge_subject_pdfs(subject_code: str, admin):
         "papers": merged_info
     }
     
+
+#============================##########################=========================##
+##=========================== For maange function of missing papers PDF uploaded by PUBLIC   =======================##
+async def create_missing_paper(body, admin):
+    
+    # Required fields
+    required_fields = ["semester_code", "req_semester_code", "branch_code", "name", "subject_code", "req_paper_code", "year", "exam_type", "paper_type"]
+    for field in required_fields:
+        if field not in body or not body[field]:
+            raise HTTPException(status_code=400, detail=f"{field} is required")
+
+
+    semester_code = body["semester_code"]
+    req_semester_code = body["req_semester_code"]
+    branch_code = body["branch_code"]
+    name = body["name"]
+    subject_code = body["subject_code"]
+    req_paper_code = body["req_paper_code"]
+    year = body["year"]
+    exam_type = body["exam_type"]    # end-sem,mide-sem
+    paper_type = body["paper_type"]  # regular, special, complemmentry
+
+    existing = await db_instance.db.missing_papers.find_one({
+        "subject_code": subject_code,
+        "year": year,
+        "exam_type": exam_type,
+        "paper_type": paper_type
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="This missing Paper already created")
+
+    new_missing_paper = {
+        "semester_code": semester_code,
+        "req_semester_code": req_semester_code,
+        "branch_code": branch_code,
+        "name": name,
+        "subject_code": subject_code,
+        "req_paper_code": req_paper_code,
+        "year": year,
+        "exam_type": exam_type,
+        "paper_type": paper_type,
+
+        "status": "missing",
+
+        "uploader_name": None,
+        "description": None,
+
+        "temp_pdf_url": None,
+        "temp_public_id": None,
+        "final_pdf_url": None,
+        "final_public_id": None,
+
+        "reviewed_by": None,
+        "reviewed_at": None,
+
+        "created_by": admin["admin_userid"],
+        "created_at": utcnow()
+    }
+
+    result = db_instance.db.missing_papers.insert_one(new_missing_paper)
+  
+    return {"success": True,
+          "message": "Missing paper created",
+        #   "paper_id": str(result['inserted_id'])
+    }
+
+
+
+
+# To get all missing paper
+async def get_missing_papers_admin(query_params: dict, admin):
+    try:
+        filters = {}
+
+        # 🔍 Filters
+        if query_params.get("semester_code"):
+            filters["semester_code"] = query_params["semester_code"]
+
+        if query_params.get("branch_code"):
+            filters["branch_code"] = query_params["branch_code"]
+
+        if query_params.get("status"):
+            filters["status"] = query_params["status"]
+
+        if query_params.get("year"):
+            filters["year"] = query_params["year"]
+
+        if query_params.get("paper_type"):
+            filters["paper_type"] = query_params["paper_type"]
+
+        if query_params.get("exam_type"):
+            filters["exam_type"] = query_params["exam_type"]
+
+        # 🔍 Optional search (subject_code)
+        if query_params.get("search"):
+            filters["subject_code"] = {
+                "$regex": query_params["search"],
+                "$options": "i"
+            }
+
+        # 📄 Pagination
+        page = int(query_params.get("page", 1))
+        limit = int(query_params.get("limit", 20))
+        skip = (page - 1) * limit
+
+        # 📊 DB Query
+        papers = await db_instance.db.missing_papers.find(filters) \
+            .sort("created_at", -1) \
+            .skip(skip) \
+            .limit(limit).to_list(None)
+ 
+        # papers = .to_list(cursor)
+        
+        # Total count
+        total = await db_instance.db.missing_papers.count_documents(filters)
+
+        # Convert ObjectId
+        papers = mongo_to_json(papers)
+
+        return {
+            "success": True,
+            "message": "getted all missing papers successfully",
+            "data": papers,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "total_pages": (total + limit - 1) // limit
+            }
+        }
+
+    except Exception as e:
+        print("Excetion error")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    
+
+# To approve and update db for right upoaded pdf questions papers
+async def accept_public_upload_and_add_paper(paper_id, admin):
+
+    # checking paper_id to save pdf url uploaded in cloudnari to db
+    try:
+        obj_id = ObjectId(paper_id)
+    except:
+        return {"success": False, "error": "Invalid paper_id"}
+
+    # ✅ Get missing paper
+    missing_paper = await db_instance.db.missing_papers.find_one({"_id": ObjectId(paper_id)})
+    if not missing_paper:
+        return {"success": False, "error": "Paper not found"}
+
+    if not missing_paper.get("temp_pdf_url"):
+        raise HTTPException(status_code=400, detail="No uploaded PDF found")
+
+    if missing_paper.get("status") == "approved":
+        raise HTTPException(status_code=400, detail="Already approved")
+
+    temp_pdf_url = missing_paper["temp_pdf_url"]
+    temp_public_id = missing_paper["temp_public_id"]
+    # FETCH PDF FROM TEMP URL
+    try:
+        response = requests.get(temp_pdf_url, timeout=15)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch PDF")
+
+        file_bytes = response.content
+
+    except Exception as e:
+        raise HTTPException(500, f"Error fetching PDF: {str(e)}")
+
+    # Branding
+    processed_pdf = await process_pdf_branding(file_bytes)
+
+    #Uploading to cloudanary
+    exam_type_paper_type = f"{missing_paper['exam_type']}_{missing_paper['paper_type']}"
+
+    result = await upload_pdf_to_cloudinary(
+        processed_pdf,
+        missing_paper["branch_code"],
+        missing_paper["semester_code"],
+        missing_paper["subject_code"],
+        missing_paper["year"],
+        exam_type_paper_type,
+        admin
+    )
+    
+    final_url = result.get("secure_url")
+    final_public_id = result.get("public_id")
+
+    if not final_url or not final_public_id:
+        raise HTTPException(500, "Final upload failed")
+
+    # Delete temp. without branding pdf uploaded by public
+    if temp_public_id:
+        try:
+            await delete_file(temp_public_id)  # your utility
+        except Exception as e:
+            logger.warning(f"Temp delete failed: {str(e)}")
+
+    #find original actual paper(of subject) where finally url will be saved (unique paper => subject_code, year, exam_type, paper_type)
+    # if paper found then save url otherwise create paper instantly and save url
+
+    actual_paper = await db_instance.db.papers.find_one({
+        "subject_code": missing_paper["subject_code"],
+        "year": missing_paper["year"],
+        "type": missing_paper["exam_type"],
+        "paper_type": missing_paper["paper_type"]
+    })
+
+
+    if not actual_paper:
+        new_paper = {
+            "subject_code": missing_paper["subject_code"],
+            "name": missing_paper["name"],
+            "type": missing_paper["exam_type"],
+            "paper_type": missing_paper["paper_type"],
+            "year": missing_paper["year"],
+            "description": "directly created on public upload pdf",
+            "paper_pdf": final_url,
+            "paper_pdf_public_id": final_public_id,
+            "questions": [],
+            "admin_userids": [admin["admin_userid"]],
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+        }
+
+        insert_res = await db_instance.db.papers.insert_one(new_paper)
+        paper_db_id = insert_res.inserted_id
+
+    else:
+        paper_db_id = actual_paper["_id"]
+
+        await db_instance.db.papers.update_one(
+            {"_id": paper_db_id},
+            {
+                "$set": {
+                    "paper_pdf": final_url,
+                    "paper_pdf_public_id": final_public_id,
+                    "updated_at": utcnow(),
+                },
+                "$addToSet": {
+                    "admin_userids": admin["admin_userid"]
+                }
+            }
+        )
+
+        # UPDATE MISSING PAPER
+    await db_instance.db.missing_papers.update_one(
+        {"_id": obj_id},
+        {
+            "$set": {
+                "status": "approved",
+                "description": "accepted Questions Paper",
+                "final_pdf_url": final_url,
+                "final_public_id": final_public_id,
+                "reviewed_by": admin["admin_userid"],
+                "reviewed_at": utcnow(),
+            },
+             "$unset": {
+                "temp_pdf_url": "",
+                "temp_public_id": ""
+            }
+        }
+    )
+
+    return {
+        "success": True,
+        "message": "Paper approved successfully",
+        "final_pdf_url": final_url
+    }
+
+
+
+
+
+#  To reject a wrong uploaeded pdf by public
+async def reject_public_uploaded_missing_paper(paper_id: str, body: dict, admin):
+
+    # ✅ Validate ObjectId
+    try:
+        obj_id = ObjectId(paper_id)
+    except:
+        return {"success": False, "error": "Invalid paper_id"}
+
+    # ✅ Get missing paper
+    missing_paper = await db_instance.db.missing_papers.find_one({"_id": obj_id})
+
+    if not missing_paper:
+        return {"success": False, "error": "Paper not found"}
+
+    # ✅ Status validation
+    if missing_paper.get("status") == "approved":
+        raise HTTPException(400, "Cannot reject approved paper")
+
+    if missing_paper.get("status") == "rejected":
+        raise HTTPException(400, "Already rejected")
+
+    # ✅ Get rejection reason
+    # reason = body.get("description", "").strip()
+
+    # if not reason:
+    #     raise HTTPException(400, "Rejection reason is required")
+
+    # UPDATE DB
+    await db_instance.db.missing_papers.update_one(
+        {"_id": obj_id},
+        {
+            "$set": {
+                "status": "rejected",
+                # "description": "Wrong Questions paper or bad quality or Blurry PDF / Wrong subject / Duplicate upload",   # ✅ store reason
+                "description": body.get("description"),
+                "reviewed_by": admin["admin_userid"],
+                "reviewed_at": utcnow(),
+            }
+        }
+    )
+
+    return {
+        "success": True,
+        "message": "Paper rejected successfully"
+    }
+
+
+
+#  To delete a missing paper
+async def delete_missing_paper(paper_id: str, admin):
+
+    # ✅ Validate ObjectId
+    try:
+        obj_id = ObjectId(paper_id)
+    except:
+        return {"success": False, "error": "Invalid paper_id"}
+
+    # ✅ Fetch paper
+    missing_paper = await db_instance.db.missing_papers.find_one({"_id": obj_id})
+
+    if not missing_paper:
+        return {"success": False, "error": "Paper not found"}
+
+    status = missing_paper.get("status")
+
+    # 🚨 Restriction rules
+    if status in ["approved", "under_review"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete paper with status '{status}'"
+        )
+
+    # Only allow: missing, rejected
+    if status not in ["missing", "rejected"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid state '{status}' for deletion"
+        )
+
+    temp_public_id = missing_paper.get("temp_public_id")
+    final_public_id = missing_paper.get("final_paper_id")
+    # 🔥 DELETE TEMP FILE (if exists)
+    if temp_public_id:
+        try:
+            await delete_file(temp_public_id)
+        except Exception as e:
+            logger.warning(f"Temp delete failed: {str(e)}")
+            
+        # 🔥 DELETE final FILE (if exists)
+    if final_public_id:
+        try:
+            await delete_file(final_public_id)
+        except Exception as e:
+            logger.warning(f"Tfinal delete failed: {str(e)}")
+
+    # 🔥 DELETE DOCUMENT
+    await db_instance.db.missing_papers.delete_one({"_id": obj_id})
+
+    return {
+        "success": True,
+        "message": "Missing paper deleted successfully"
+    }
