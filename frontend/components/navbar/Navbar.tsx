@@ -22,6 +22,7 @@ const USER_NAV: NavLink[] = [
   { href: "/pyq", label: "Solution" },
   { href: "/result", label: "Result"},
   { href: "/cgpa", label: "CGPA" },
+  { href: "/pyq/missing-papers", label: "Missing Papers"},
   { href: "/about", label: "About" },
   { href: "/help", label: "Help" },
   { href: "/contact-us", label: "Contact-Us" },
@@ -31,7 +32,8 @@ const ADMIN_NAV: NavLink[] = [
   { href: "/admin", label: "Admin Dashboard" },
   { href: "/admin/ssb", label: "Subject" },
   { href: "/admin/papers", label: "Paper" },
-  { href: "/admin/pdf", label: "Pdf" },
+  { href: "/admin/missing-papers", label: "Missing Papers"},
+  { href: "/admin/pdf", label: "Watermark" },
 ];
 
 

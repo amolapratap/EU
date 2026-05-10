@@ -5,6 +5,14 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 // export const API_URL = "http://127.0.0.1:8000";
 
+// import axios from "axios";
+
+// const api = axios.create({
+//   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
+// });
+
+// export default api;
+
 
 // export async function apiPost(path: string, data: any) {
 //   const res = await fetch(`${API_URL}${path}`, {
@@ -140,6 +148,12 @@ export async function apiPut(path: string, data: any) {
   return apiFetch(path, {
     method: "PUT",
     body: JSON.stringify(data),
+  });
+}
+
+export async function apiDelete(path: string) {
+  return apiFetch(path, {
+    method: "DELETE",
   });
 }
 
