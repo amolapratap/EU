@@ -28,6 +28,7 @@ interface Paper {
   _id: string;
   name: string;
   type: string;
+  paper_type: string;
   year: number;
   description?: string;
   paper_pdf?: string;
@@ -227,7 +228,7 @@ export default function AdminPapersPage() {
           <thead className="bg-[#0F1629]">
             <tr>
               <Th>Name</Th>
-              <Th>Type</Th>
+              <Th>Exam/Paper Type</Th>
               <Th>Year</Th>
               <Th>Description</Th>
               <Th>Pdf</Th>
@@ -252,7 +253,7 @@ export default function AdminPapersPage() {
                 >
                   {p.name}
                 </Td>
-                <Td>{p.type}</Td>
+                <Td>{p.type}/{p.paper_type}</Td>
                 <Td>{p.year}</Td>
                 <Td>{p.description || "-"}</Td>
                 {/* <Td>{p.paper_pdf || "Na"}</Td> */}
@@ -443,12 +444,13 @@ const ActionBtn = ({ children, danger, ...p }: any) => (
 function PaperModal({ subject, data, onClose, onSaved }: any) {
   const [name, setName] = useState(data?.name || "");
   const [type, setType] = useState(data?.type || "END-SEM");
+  const [paper_type, setpaper_type] = useState(data?.paper_type || "regular")
   const [year, setYear] = useState(data?.year || new Date().getFullYear());
   const [desc, setDesc] = useState(data?.description || "");
   const [paper_pdf, setpaper_pdf] = useState(data?.paper_pdf || "")
 
   async function submit() {
-    if (!name || !type || !year) return;
+    if (!name || !type  || !paper_type || !year) return;
     console.log("EDIT DATA:", data);
 
     const method = data ? "PUT" : "POST";
@@ -466,6 +468,7 @@ function PaperModal({ subject, data, onClose, onSaved }: any) {
         subject_code: subject,
         name,
         type,
+        paper_type,
         year,
         description: desc,
         paper_pdf,
@@ -486,14 +489,25 @@ function PaperModal({ subject, data, onClose, onSaved }: any) {
         <input className="input mb-3" placeholder="Paper Name"
           value={name} onChange={e => setName(e.target.value)} />
 
+        <div className="flex gap-3 mb-3">
+
         <select className="input mb-3" value={type}
           onChange={e => setType(e.target.value)}>
-          <option>MID-SEM</option>
           <option>END-SEM</option>
+          <option>MID-SEM</option>
           <option>NPTEL</option>
           <option>QUIZ</option>
           <option>PRACTICE</option>
         </select>
+
+        <select className="input mb-3" value={paper_type}
+          onChange={e => setpaper_type(e.target.value)}>
+          <option>regular</option>
+          <option>special</option>
+          <option>complement</option>
+        </select>
+
+        </div>
 
         <input type="number" className="input mb-3"
           value={year} onChange={e => setYear(+e.target.value)} />

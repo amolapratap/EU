@@ -8,6 +8,9 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
+import Providers from "./providers";
+import { Toaster } from "sonner";
+
 export const metadata = {
   title: "Alpha Result - PYQs, Solutions, Results & SGPA Calculator",
   description: "AlphaResult helps BEU students access PYQs, Solutions, check results, and calculate SGPA easily.",
@@ -32,6 +35,13 @@ export default function RootLayout({ children }: any) {
 
         <AuthProvider>
           <AuthModalProvider>
+
+          {/* <Toaster richColors position="top-right" /> */}
+          <Toaster
+            richColors
+            position="top-right"
+            duration={5000}
+          />
             
             {/* MAIN LAYOUT */}
             <div className="flex flex-col min-h-screen">
@@ -42,7 +52,10 @@ export default function RootLayout({ children }: any) {
               {/* PAGE CONTENT */}
               <main className="flex-1">
                 {/* <div className="container py-10">{children}</div> */}
-                {children}
+                {/* {children} */}
+                <Providers>
+                  {children}
+                </Providers>
               </main>
 
               {/* FOOTER */}
