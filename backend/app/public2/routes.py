@@ -76,7 +76,7 @@ async def get_public_missing_papers(
     search: str = Query(None),
 
     page: int = Query(1),
-    limit: int = Query(20),
+    limit: int = Query(100),
 ):
     query_params = {
         "req_semester_code": req_semester_code,
