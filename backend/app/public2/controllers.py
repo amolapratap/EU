@@ -282,7 +282,7 @@ async def get_missing_papers_public(query_params):
         }
 
     page = int(query_params.get("page", 1))
-    limit = int(query_params.get("limit", 20))
+    limit = int(query_params.get("limit", 50))
     skip = (page - 1) * limit
 
     cursor = await db_instance.db.missing_papers.find(filters) \
