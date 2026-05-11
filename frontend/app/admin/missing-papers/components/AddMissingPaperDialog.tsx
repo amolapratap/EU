@@ -151,7 +151,7 @@ export default function AddMissingPaperDialog({
               </label>
 
               <input
-                placeholder="2024"
+                placeholder="2026"
                 className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-black/10"
                 onChange={(e) =>
                   setForm({
@@ -169,7 +169,7 @@ export default function AddMissingPaperDialog({
               </label>
 
               <input
-                placeholder="100501"
+                placeholder="105501"
                 className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-black/10"
                 onChange={(e) =>
                   setForm({
@@ -187,7 +187,7 @@ export default function AddMissingPaperDialog({
               </label>
 
               <input
-                placeholder="100501-2023-END"
+                placeholder="105501"
                 className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-black/10"
                 onChange={(e) =>
                   setForm({

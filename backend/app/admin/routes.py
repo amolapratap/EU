@@ -273,7 +273,7 @@ async def get_missing_papers(
     search: str = Query(None),
 
     page: int = Query(1),
-    limit: int = Query(20),
+    limit: int = Query(100),
 
     admin=Depends(get_current_admin)
 ):

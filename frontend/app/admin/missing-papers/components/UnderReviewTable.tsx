@@ -33,6 +33,7 @@ export default function UnderReviewTable({ data }: Props) {
             <tr>
               <th className="p-4">Subject</th>
               <th className="p-4">Uploader</th>
+              <th className="p-4">Year</th>
               <th className="p-4">Status</th>
               <th className="p-4">Actions</th>
             </tr>
@@ -52,6 +53,10 @@ export default function UnderReviewTable({ data }: Props) {
 
                 <td className="p-4">
                   {paper.uploader_name || "Anonymous"}
+                </td>
+
+                <td className="p-4">
+                  {paper.year || "-"}
                 </td>
 
                 <td className="p-4">
