@@ -114,6 +114,8 @@ export default function UploadPaperDrawer({
         }
       );
 
+      setFile(null);
+
       onClose();
 
       onSuccess();

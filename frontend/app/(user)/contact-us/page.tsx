@@ -39,6 +39,8 @@ export default function ContactPage() {
     setLoading(true);
     setSuccess("");
 
+    
+
     // 🔹 Later connect with backend API
     setTimeout(() => {
       setSuccess("Your message has been sent successfully!");

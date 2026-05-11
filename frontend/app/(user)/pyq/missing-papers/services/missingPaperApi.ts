@@ -38,7 +38,6 @@ export const uploadPublicPaper = async (
     }
   );
 
-
   const json = await res.json();
 
   if (!res.ok) {

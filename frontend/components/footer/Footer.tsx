@@ -121,48 +121,56 @@ export default function Footer() {
           </div>
         </div> */}
         {/* NEWSLETTER / COMMUNITY */}
-<div className="space-y-4">
+              <div className="space-y-4">
 
-<div>
+                  <div>
 
-  <h3 className="text-white font-semibold text-lg">
-    Stay Updated
-  </h3>
+                      <h3 className="text-white font-semibold text-lg">
+                        Stay Updated
+                      </h3>
 
-  <p className="text-slate-400 text-sm mt-1 leading-relaxed">
-    Get updates about PYQs, notes, exam resources,
-    and important student announcements.
-  </p>
+                      <p className="text-slate-400 text-sm mt-1 leading-relaxed">
+                        Get updates about PYQs, notes, exam resources,
+                        and important student announcements.
+                      </p>
 
-</div>
+                    </div>
 
-<form
-  onSubmit={handleSubscribe}
-  className="flex flex-col sm:flex-row gap-3"
->
-  <input
-    type="email"
-    value={email}
-    onChange={(e) =>
-      setEmail(e.target.value)
-    }
-    className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 outline-none text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500/30 transition"
-    placeholder="Enter your email"
-  />
+                    <form
+                      onSubmit={handleSubscribe}
+                      // className="flex flex-col sm:flex-row gap-3"
+                      className="flex items-center rounded-2xl overflow-hidden border border-slate-700 bg-slate-800/80 focus-within:ring-2 focus-within:ring-indigo-500/30 transition"
+                    >
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) =>
+                          setEmail(e.target.value)
+                        }
+                        // className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 outline-none text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500/30 transition"
+                        className="flex-1 min-w-0 px-4 py-3 bg-transparent outline-none text-sm text-white placeholder:text-slate-500"
+                        placeholder="Enter your email"
+                      />
+                        <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white font-medium whitespace-nowrap transition-all duration-200 shrink-0"
+                      >
 
-  <button
-    type="submit"
-    className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-medium whitespace-nowrap transition-all duration-200"
-  >
-    Subscribe
-  </button>
-</form>
+                        {loading
+                          ? "Please wait..."
+                          : "Subscribe"}
 
-<p className="text-xs text-slate-500 leading-relaxed">
-  No spam. Only useful academic updates for Bihar Engineering students.
-</p>
+                      </button>
+                    </form>
 
-</div>
+
+
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      No spam. Only useful academic updates for Bihar Engineering students.
+                    </p>
+
+                </div>
 
 
 {/* <form
