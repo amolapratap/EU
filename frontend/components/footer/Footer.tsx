@@ -1,6 +1,63 @@
+"use client"
+
 import Link from "next/link";
+import { useState } from "react";
+import { apiPost } from "@/lib/api";
+import { toast } from "sonner";
+
+
 
 export default function Footer() {
+
+
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  
+  const handleSubscribe = async (
+    e: React.FormEvent
+  ) => {
+
+    // if (!email){
+    //   toast.error("Enter Email",{duration: 5000});
+    //   // return;
+    // }
+  
+    e.preventDefault();
+  
+    try {
+  
+      setLoading(true);
+  
+      const res = await apiPost(
+        "/api/public/newsletter/subscribe",
+        { email }
+      );
+  
+      toast.success(
+        res.message ||
+        "Subscribed successfully"
+      );
+  
+      setEmail("");
+  
+    } catch (err: any) {
+  
+      toast.error(
+        err.message ||
+        "Subscription failed"
+      );
+  
+    } finally {
+  
+      setLoading(false);
+  
+    }
+  };
+
+
+
+
   return (
     <footer className="bg-slate-900 text-slate-300 mt-20">
       <div className="container mx-auto px-4 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -51,7 +108,7 @@ export default function Footer() {
         </div>
 
         {/* NEWSLETTER (optional future use) */}
-        <div>
+        {/* <div>
           <h3 className="text-white font-semibold mb-3">Stay Updated</h3>
           <div className="flex">
             <input
@@ -62,7 +119,82 @@ export default function Footer() {
               →
             </button>
           </div>
-        </div>
+        </div> */}
+        {/* NEWSLETTER / COMMUNITY */}
+<div className="space-y-4">
+
+<div>
+
+  <h3 className="text-white font-semibold text-lg">
+    Stay Updated
+  </h3>
+
+  <p className="text-slate-400 text-sm mt-1 leading-relaxed">
+    Get updates about PYQs, notes, exam resources,
+    and important student announcements.
+  </p>
+
+</div>
+
+<form
+  onSubmit={handleSubscribe}
+  className="flex flex-col sm:flex-row gap-3"
+>
+  <input
+    type="email"
+    value={email}
+    onChange={(e) =>
+      setEmail(e.target.value)
+    }
+    className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 outline-none text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500/30 transition"
+    placeholder="Enter your email"
+  />
+
+  <button
+    type="submit"
+    className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-medium whitespace-nowrap transition-all duration-200"
+  >
+    Subscribe
+  </button>
+</form>
+
+<p className="text-xs text-slate-500 leading-relaxed">
+  No spam. Only useful academic updates for Bihar Engineering students.
+</p>
+
+</div>
+
+
+{/* <form
+  onSubmit={handleSubscribe}
+  className="flex flex-col sm:flex-row gap-3"
+>
+
+  <input
+    type="email"
+    value={email}
+    onChange={(e) =>
+      setEmail(e.target.value)
+    }
+    className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 outline-none text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500/30 transition"
+    placeholder="Enter your email"
+  />
+
+  <button
+    type="submit"
+    disabled={loading}
+    className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-2xl font-medium whitespace-nowrap transition-all duration-200"
+  >
+
+    {loading
+      ? "Please wait..."
+      : "Subscribe"}
+
+  </button>
+
+</form> */}
+
+
       </div>
 
       {/* MOVING CREDIT BAR */}

@@ -6,7 +6,36 @@ from app.auth.utils import get_current_user_optional
 
 router = APIRouter()
 
+@router.post("/newsletter/subscribe")
+async def subscribe_newsletter(body: dict):
 
+    email = body.get("email")
+
+    if not email:
+        raise HTTPException(
+            400,
+            "Email is required"
+        )
+
+    existing = await db_instance.db.newsletter.find_one({
+        "email": email
+    })
+
+    if existing:
+        return {
+            "success": True,
+            "message": "Already subscribed"
+        }
+
+    await db_instance.db.newsletter.insert_one({
+        "email": email,
+        "created_at": utcnow()
+    })
+
+    return {
+        "success": True,
+        "message": "Subscribed successfully"
+    }
 
 @router.get("/semester")
 async def get_semesters():
