@@ -9,34 +9,7 @@ router = APIRouter()
 #  api for subscribing for newsletter
 @router.post("/newsletter/subscribe")
 async def subscribe_newsletter(body: dict):
-
-    email = body.get("email")
-
-    if not email:
-        raise HTTPException(
-            400,
-            "Email is required"
-        )
-
-    existing = await db_instance.db.newsletter.find_one({
-        "email": email
-    })
-
-    if existing:
-        return {
-            "success": True,
-            "message": "Already subscribed"
-        }
-
-    await db_instance.db.newsletter.insert_one({
-        "email": email,
-        "created_at": utcnow()
-    })
-
-    return {
-        "success": True,
-        "message": "Subscribed successfully"
-    }
+    return await add_susbscribe_newsletter(body)
 
 
 #  api for contact, query, feedback

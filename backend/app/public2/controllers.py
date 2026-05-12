@@ -11,8 +11,38 @@ from pymongo import ReturnDocument
 import cloudinary.uploader
 
 
+# finction add email of subscriber in db
+async def add_susbscribe_newsletter(body: dict):
 
+    email = body.get("email")
 
+    if not email:
+        raise HTTPException(
+            400,
+            "Email is required"
+        )
+
+    existing = await db_instance.db.newsletter.find_one({
+        "email": email
+    })
+
+    if existing:
+        return {
+            "success": True,
+            "message": "Already subscribed"
+        }
+
+    await db_instance.db.newsletter.insert_one({
+        "email": email,
+        "created_at": utcnow()
+    })
+
+    return {
+        "success": True,
+        "message": "Subscribed successfully"
+    }
+
+#  function to add contactus message in db
 async def send_message_contact_us(body):
     name = body.get("name")
     email = body.get("email")
