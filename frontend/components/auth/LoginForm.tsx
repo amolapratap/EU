@@ -26,6 +26,7 @@ export default function LoginForm({ showSignup, showForgot, hide }: any) {
       login(res.token, {
         user_id: res.user_id,
         email,
+        name: res.name || "NA",
         role: res.role,
         semester: res.semester,
         branch: res.branch,

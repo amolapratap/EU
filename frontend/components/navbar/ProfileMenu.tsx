@@ -36,7 +36,7 @@ export default function ProfileMenu({ user }: any) {
         "
       >
         {/* USER ICON */}
-        <svg
+        {/* <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="currentColor"
@@ -47,7 +47,23 @@ export default function ProfileMenu({ user }: any) {
             d="M12 2.25a5.25 5.25 0 100 10.5 5.25 5.25 0 000-10.5zM6 13.5a6 6 0 0112 0v.75a.75.75 0 01-.75.75h-10.5a.75.75 0 01-.75-.75v-.75z"
             clipRule="evenodd"
           />
-        </svg>
+        </svg> */}
+
+            <div 
+            // className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center font-semibold text-sm uppercase shadow-sm"
+          // className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-semibold text-sm uppercase shadow-sm"
+          // className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-900 to-black text-white flex items-center just"
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 text-white flex items-center justify-center text-sm font-bold uppercase shadow-lg ring-2 ring-white/80 select-none"
+           >
+
+            {/* {user?.name?.charAt(0) || "U"} */}
+            {user?.name
+              ?.split(" ")
+              .map((word: string) => word[0])
+              .slice(0, 2)
+              .join("") || "U"}
+
+            </div>
       </button>
 
       {/* ================= DESKTOP DROPDOWN ================= */}
@@ -75,7 +91,7 @@ export default function ProfileMenu({ user }: any) {
           {/* ACTIONS */}
           <Link href="/account">
             <button className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100">
-              Account
+              Profile
             </button>
           </Link>
 

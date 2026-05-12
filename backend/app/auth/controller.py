@@ -118,7 +118,8 @@ async def login_user(email, password):
         "token": token,
         "expires_at": expires_at.isoformat(),
         "user_id": str(user["_id"]),
-        "role": user["role"],
+        "name": str(user["name"]),
+        "role": user.get("role"),
         "semester": user.get("semester"),
         "branch": user.get("branch"),
         "admin_userid": user.get("admin_userid")   # frontend may need it
