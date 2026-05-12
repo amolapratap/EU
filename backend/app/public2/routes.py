@@ -6,6 +6,7 @@ from app.auth.utils import get_current_user_optional
 
 router = APIRouter()
 
+#  api for subscribing for newsletter
 @router.post("/newsletter/subscribe")
 async def subscribe_newsletter(body: dict):
 
@@ -36,6 +37,12 @@ async def subscribe_newsletter(body: dict):
         "success": True,
         "message": "Subscribed successfully"
     }
+
+
+#  api for contact, query, feedback
+@router.post("/contact-us")
+async def contact_us(body: dict):
+    return await send_message_contact_us(body)
 
 @router.get("/semester")
 async def get_semesters():

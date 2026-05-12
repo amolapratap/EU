@@ -9,6 +9,8 @@ import {
     Instagram,
     MessageCircle
   } from "lucide-react";
+import { apiPost } from "@/lib/api";
+import { toast } from "sonner";
   
 
 export default function ContactPage() {
@@ -32,22 +34,47 @@ export default function ContactPage() {
     e.preventDefault();
 
     if (!form.name || !form.email || !form.message) {
-      alert("Please fill all required fields");
+      // alert("Please fill all required fields");
+      toast.error("Please fill all required fields");
       return;
     }
 
-    setLoading(true);
-    setSuccess("");
+  
 
+    try{
+      setLoading(true);
+      setSuccess("");
+
+      const res = await apiPost(
+        "/api/public/contact-us",
+        form
+      );
+
+      toast.success(
+        res.message ||
+        "Message sent successfully"
+      );
     
-
-    // 🔹 Later connect with backend API
-    setTimeout(() => {
+     // 🔹 Later connect with backend API
+     setTimeout(() => {
       setSuccess("Your message has been sent successfully!");
       setForm({ name: "", email: "", subject: "", message: "" });
       setLoading(false);
-    }, 1000);
-  }
+    }, 100);
+    
+    }
+    catch(err: any){
+      toast.error(
+        err.message ||
+        "Failed to send message"
+      );
+    }  finally {
+      
+    setLoading(false);
+
+    }
+
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -67,9 +94,9 @@ export default function ContactPage() {
         <div className="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-10">
 
           {/* CONTACT FORM */}
-          {/* <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-xl font-semibold mb-6 text-slate-800">
-              Send us a Message
+              Send us a Message/Feedback
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -124,7 +151,7 @@ export default function ContactPage() {
                 </p>
               )}
             </form>
-          </div> */}
+          </div>
 
           {/* CONTACT INFO */}
           <div className="space-y-6">

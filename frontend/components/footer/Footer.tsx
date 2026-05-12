@@ -173,36 +173,6 @@ export default function Footer() {
                 </div>
 
 
-{/* <form
-  onSubmit={handleSubscribe}
-  className="flex flex-col sm:flex-row gap-3"
->
-
-  <input
-    type="email"
-    value={email}
-    onChange={(e) =>
-      setEmail(e.target.value)
-    }
-    className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 outline-none text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500/30 transition"
-    placeholder="Enter your email"
-  />
-
-  <button
-    type="submit"
-    disabled={loading}
-    className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-2xl font-medium whitespace-nowrap transition-all duration-200"
-  >
-
-    {loading
-      ? "Please wait..."
-      : "Subscribe"}
-
-  </button>
-
-</form> */}
-
-
       </div>
 
       {/* MOVING CREDIT BAR */}

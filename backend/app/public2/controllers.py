@@ -11,6 +11,44 @@ from pymongo import ReturnDocument
 import cloudinary.uploader
 
 
+
+
+async def send_message_contact_us(body):
+    name = body.get("name")
+    email = body.get("email")
+    subject = body.get("subject")
+    message = body.get("message")
+    print("----",name, email, message)
+
+    if not name or not email or not message:
+        raise HTTPException(
+        400,
+        "Fill all required fields")
+
+    result = await db_instance.db.Contact_us.insert_one({
+        "name": name,
+        "email": email,
+        "subject": subject,
+        "message": message,
+        "created_at": utcnow(),
+    })
+
+    if not result.inserted_id:
+        raise HTTPException(
+        status_code=500,
+        detail=result.get(
+            "error",
+            "Message not sent"
+        )
+    )
+
+    return {
+        "success": True,
+        "message": "message sent successfully"
+    } 
+
+
+
 async def list_semesters():
     sem = await db_instance.db.semesters.find().sort("code", 1).to_list(100)
     return {"success": True, 'data': mongo_to_json(sem)}
@@ -105,7 +143,7 @@ async def sgpa(body, current_user):
     for sub in subs:
         
         if not sub.get("subject_credit"):
-            print(f"Credit missing for subject {sub["code"]}")
+            # print(f"Credit missing for subject {sub["code"]}")
             continue
             raise HTTPException(
                 status_code=400,
@@ -259,10 +297,10 @@ async def upload_pdf_to_cloudinary_public(
 async def get_missing_papers_public(query_params):
 
     filters = {}
-    print("req_semester_code", query_params.get("req_semester_code"))
+    # print("req_semester_code", query_params.get("req_semester_code"))
     if query_params.get("req_semester_code"):
         filters["req_semester_code"] = query_params["req_semester_code"]
-        print("req_semester_code", query_params.get("req_semester_code"))
+        # print("req_semester_code", query_params.get("req_semester_code"))
 
     if query_params.get("branch_code"):
         filters["branch_code"] = query_params["branch_code"]
