@@ -15,6 +15,11 @@ from app.user.routes import router as user_router
 from app.auth.google_routes import router as google_router
 # from app.users.routes import router as user_router
 
+
+
+from app.notices.scheduler import scheduler
+from app.notices.controllers import check_new_notices
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0.0"
@@ -37,6 +42,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# To detect new notice and add in db in db
+scheduler.add_job(
+    check_new_notices,
+    "interval",
+    minutes=1
+)
+
+scheduler.start()
+
+
 
 # Startup & Shutdown Events
 @app.on_event("startup")

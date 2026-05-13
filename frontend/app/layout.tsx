@@ -11,6 +11,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import Providers from "./providers";
 import { Toaster } from "sonner";
 
+import OneSignalProvider from "@/components/providers/OneSignalProvider";
+
 export const metadata = {
   title: "Alpha Result - PYQs, Solutions, Results & SGPA Calculator",
   description: "AlphaResult helps BEU students access PYQs, Solutions, check results, and calculate SGPA easily.",
@@ -34,6 +36,9 @@ export default function RootLayout({ children }: any) {
       <body className="bg-[#F9FAFF] min-h-screen">
 
         <AuthProvider>
+
+        <OneSignalProvider />
+        
           <AuthModalProvider>
 
           {/* <Toaster richColors position="top-right" /> */}
