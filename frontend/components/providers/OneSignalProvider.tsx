@@ -1,0 +1,36 @@
+"use client";
+
+import { useEffect } from "react";
+
+import OneSignal from "react-onesignal";
+
+
+export default function OneSignalProvider() {
+
+  useEffect(() => {
+
+
+    console.log("OneSignal Init");
+    console.log(
+        process.env
+          .NEXT_PUBLIC_ONESIGNAL_APP_ID
+      );
+
+    OneSignal.init({
+
+      appId:
+        process.env
+          .NEXT_PUBLIC_ONESIGNAL_APP_ID!,
+
+    //   notifyButton: {
+    //     enable: true,
+    //   },
+
+      allowLocalhostAsSecureOrigin: true,
+
+    });
+
+  }, []);
+
+  return null;
+}
