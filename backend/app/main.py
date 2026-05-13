@@ -51,13 +51,16 @@ scheduler.add_job(
     minutes=10
 )
 
-scheduler.start()
+# scheduler.start()
 
 
 # Startup & Shutdown Events
 @app.on_event("startup")
 async def startup_event():
     await connect_to_mongo()
+    scheduler.start()
+    print("Scheduler started")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
