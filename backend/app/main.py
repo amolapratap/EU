@@ -48,11 +48,10 @@ app.add_middleware(
 scheduler.add_job(
     check_new_notices,
     "interval",
-    minutes=1
+    minutes=10
 )
 
 scheduler.start()
-
 
 
 # Startup & Shutdown Events
@@ -63,6 +62,8 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     await close_mongo_connection()
+    scheduler.shutdown()
+    print("Scheduler stopped")
 
 # Root Route
 @app.get("/")

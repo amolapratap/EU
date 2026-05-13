@@ -4,6 +4,7 @@ from app.utils.datetime import utcnow
 from app.notices.services import fetch_beu_notices
 from app.notices.telegram import send_telegram_notice
 from app.notices.onesignal import send_push_notification
+import asyncio
 
 
 
@@ -12,58 +13,68 @@ async def check_new_notices():
     print("started checking---", "Time", utcnow())
     notices = await fetch_beu_notices()
 
-    for notice in notices:
+    try:
 
-        beu_notice_id = notice["id"]
+        for notice in notices:
 
-        existing = await db_instance.db.beu_notices.find_one({
-            "beu_notice_id": beu_notice_id
-        })
+            beu_notice_id = notice["id"]
 
-        if existing:
-            continue
+            existing = await db_instance.db.beu_notices.find_one({
+                "beu_notice_id": beu_notice_id
+            })
 
-        pdf_link = notice.get("link")
+            if existing:
+                continue
 
-        full_pdf_url = (
-            f"https://beu-bih.ac.in/backend/{pdf_link}"
-        )
+            pdf_link = notice.get("link")
 
-        doc = {
-            "beu_notice_id": beu_notice_id,
+            full_pdf_url = (
+                f"https://beu-bih.ac.in/backend/{pdf_link}"
+            )
 
-            "title": notice.get("board"),
+            doc = {
+                "beu_notice_id": beu_notice_id,
 
-            "notice_date": notice.get("noticedate"),
+                "title": notice.get("board"),
 
-            "pdf_link": pdf_link,
+                "notice_date": notice.get("noticedate"),
 
-            "full_pdf_url": full_pdf_url,
+                "pdf_link": pdf_link,
 
-            "is_important": bool(notice.get("isimportant")),
+                "full_pdf_url": full_pdf_url,
 
-            "telegram_sent": False,
-            "push_sent": False,
+                "is_important": bool(notice.get("isimportant")),
 
-            "created_at": utcnow()
-        }
+                "telegram_sent": False,
+                "push_sent": False,
 
-        await db_instance.db.beu_notices.insert_one(doc)
+                "created_at": utcnow()
+            }
 
-        print("New BEU Notice:", doc["title"])
+            await db_instance.db.beu_notices.insert_one(doc)
 
+            print("New BEU Notice:", doc["title"])
+
+            
+            # TELEGRAM
+            telegram_res = await send_telegram_notice(doc)
+
+            if telegram_res:
+                print(" Telegram Sent")
+
+            
+            # PUSH Browser Notification
+            push_res = await send_push_notification(doc)
+
+            if push_res:
+                print(" Browser Notification Push Sent")
         
-        # TELEGRAM
-        telegram_res = await send_telegram_notice(doc)
+        print("closed checking---", "Time", utcnow())
 
-        if telegram_res:
-            print(" Telegram Sent")
-
-        
-        # PUSH Browser Notification
-        push_res = await send_push_notification(doc)
-
-        if push_res:
-            print(" Browser Notification Push Sent")
+    except asyncio.CancelledError:
+        print("Notice checker cancelled during reload")
+    
+    except Exception as e:
+        print("Notice checker error:", e)
 
     return None
