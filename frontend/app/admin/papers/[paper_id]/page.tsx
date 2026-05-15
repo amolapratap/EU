@@ -264,6 +264,54 @@ export default function AdminPaperQuestionsPage() {
                         {sq.solution_md}
                       </p>
                     )}
+
+
+{sq.solution_blocks?.length > 0 ? (
+
+<div className="space-y-4 mt-3">
+
+  {sq.solution_blocks.map((block: any) => (
+
+    <div key={block.id}>
+
+      {block.type === "text" && (
+        <p className="text-green-400 whitespace-pre-wrap">
+          {block.content}
+        </p>
+      )}
+
+      {block.type === "image" && (
+
+        <div className="space-y-2">
+
+          <img
+            src={block.image_url}
+            alt="solution"
+            className="rounded-2xl border max-h-[500px]"
+          />
+
+          {block.caption && (
+            <p className="text-sm text-slate-400">
+              {block.caption}
+            </p>
+          )}
+
+        </div>
+      )}
+
+    </div>
+  ))}
+
+</div>
+
+) : sq.solution_md ? (
+
+<p className="mt-2 text-green-400 whitespace-pre-wrap">
+  {sq.solution_md}
+</p>
+
+) : null}
+
                   </div>
                 ))}
               </div>
@@ -387,7 +435,17 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
                 correct_index: 0,
                 solution_md: "",
               }
-            : { solution_md: "" }),
+            // : { solution_md: "" }),
+            : {
+              solution_md: "",
+              solution_blocks: [
+                {
+                  id: crypto.randomUUID(),
+                  type: "text",
+                  content: "",
+                },
+              ],
+            }),
         },
       ])
     );
@@ -403,7 +461,7 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
     setSubs(prev => reIndex(prev.filter((_, idx) => idx !== i)));
   }
 
-  // New for solution_block
+  // New for solution_block for single type
   function addTextBlock() {
 
     setSolutionBlocks(prev => [
@@ -415,7 +473,6 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
       },
     ]);
   }
-  
   
   async function addImageBlock(file: File) {
   
@@ -437,13 +494,11 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
         id: "solution-upload"
       });
   
-  
       const res = await uploadSolutionImage(
         file,
         public_id
       );
-  
-  
+
       setSolutionBlocks(prev => [
         ...prev,
         {
@@ -494,6 +549,171 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
       prev.filter(block => block.id !== id)
     );
   }
+
+
+
+
+
+
+  // New for solution_block for multi type*sub-quetion)
+  function addSubTextBlock(subIndex: number) {
+
+    setSubs(prev =>
+      prev.map((sub, i) => {
+  
+        if (i !== subIndex) return sub;
+  
+        return {
+          ...sub,
+  
+          solution_blocks: [
+            ...(sub.solution_blocks || []),
+  
+            {
+              id: crypto.randomUUID(),
+  
+              type: "text",
+  
+              content: "",
+            },
+          ],
+        };
+      })
+    );
+  }
+  
+  
+  
+  async function addSubImageBlock(
+    subIndex: number,
+    sq_no: string,
+    file: File
+  ) {
+  
+    try {
+  
+      const sub = subs[subIndex];
+  
+      const imageIndex =
+        (sub.solution_blocks || []).filter(
+          (b: any) => b.type === "image"
+        ).length + 1;
+  
+  
+      const public_id =
+        `solutions/${paper.subject_code}` +
+        `/q_${qNo}` +
+        `/sub_${sq_no}` +
+        `/img_${imageIndex}`;
+  
+  
+      toast.loading("Uploading image...", {
+        id: "sub-upload"
+      });
+  
+  
+      const res = await uploadSolutionImage(
+        file,
+        public_id
+      );
+  
+  
+      setSubs(prev =>
+        prev.map((sub, i) => {
+  
+          if (i !== subIndex) return sub;
+  
+          return {
+            ...sub,
+  
+            solution_blocks: [
+              ...(sub.solution_blocks || []),
+  
+              {
+                id: crypto.randomUUID(),
+  
+                type: "image",
+  
+                image_url: res.image_url,
+  
+                public_id: res.public_id,
+  
+                caption: "",
+              },
+            ],
+          };
+        })
+      );
+  
+  
+      toast.success("Image uploaded", {
+        id: "sub-upload"
+      });
+  
+    } catch (err: any) {
+  
+      toast.error(
+        err.message || "Upload failed"
+      );
+    }
+  }
+  
+  
+  
+  function updateSubBlock(
+    subIndex: number,
+    blockId: string,
+    patch: any
+  ) {
+  
+    setSubs(prev =>
+      prev.map((sub, i) => {
+  
+        if (i !== subIndex) return sub;
+  
+        return {
+  
+          ...sub,
+  
+          solution_blocks:
+            sub.solution_blocks.map((block: any) =>
+  
+              block.id === blockId
+                ? { ...block, ...patch }
+                : block
+            ),
+        };
+      })
+    );
+  }
+  
+  
+  
+  function removeSubBlock(
+    subIndex: number,
+    blockId: string
+  ) {
+  
+    setSubs(prev =>
+      prev.map((sub, i) => {
+  
+        if (i !== subIndex) return sub;
+  
+        return {
+  
+          ...sub,
+  
+          solution_blocks:
+            sub.solution_blocks.filter(
+              (block: any) =>
+                block.id !== blockId
+            ),
+        };
+      })
+    );
+  }
+
+
 
   async function save() {
     if (!canSave()) {
@@ -570,7 +790,7 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
 
       <input
         className="input"
-        placeholder="Marks"
+        placeholder="Marks (14)"
         value={marks}
         onChange={e => setMarks(e.target.value)}
       />
@@ -602,14 +822,14 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
         </>
       )} */}
 
-{/* New for extend image */}
+{/* New for single typw quest., exteende for image */}
 {structure === "single" && (
 
 <>
 
   <textarea
     className="input h-32"
-    placeholder="Question (Markdown + LaTeX)"
+    placeholder="Question Text"
     value={question}
     onChange={e => setQuestion(e.target.value)}
   />
@@ -655,7 +875,7 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
 
           <textarea
             className="input h-40"
-            placeholder="Write explanation..."
+            placeholder="Write Solution..."
             value={block.content}
             onChange={e =>
               updateBlock(block.id, {
@@ -780,14 +1000,14 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
 
               <input
                 className="input mt-2"
-                placeholder="Marks"
+                placeholder="Sub-question Marks (2 or 7)"
                 value={s.marks}
                 onChange={e => updateSub(i, { marks: e.target.value })}
               />
 
               <textarea
                 className="input mt-2"
-                placeholder="Question (Markdown + LaTeX)"
+                placeholder="Question Text"
                 value={s.question_md}
                 onChange={e =>
                   updateSub(i, { question_md: e.target.value })
@@ -828,7 +1048,7 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
                 </>
               )}
 
-              {nature === "subjective" && (
+              {/* {nature === "subjective" && (
                 <textarea
                   className="input h-32 mt-2"
                   placeholder="Solution (Markdown + LaTeX)"
@@ -837,7 +1057,141 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
                     updateSub(i, { solution_md: e.target.value })
                   }
                 />
-              )}
+              )} */}
+        
+{/* UI for add and edit for subjective multi sub-question */}
+{nature === "subjective" && (
+
+<>
+
+
+  {/* BLOCKS */}
+  <div className="space-y-4 mt-4">
+
+    {(s.solution_blocks || []).map(
+      (block: any, blockIndex: number) => (
+
+        <div
+          key={block.id}
+          className="border border-white/10 rounded-2xl p-4 bg-[#11172C]"
+        >
+
+          <div className="flex justify-between items-center mb-3">
+
+            <p className="text-sm text-slate-400">
+              Block {blockIndex + 1}
+            </p>
+
+            <button
+              onClick={() =>
+                removeSubBlock(i, block.id)
+              }
+              className="text-red-400 text-sm"
+            >
+              Remove
+            </button>
+
+          </div>
+
+
+          {/* TEXT */}
+          {block.type === "text" && (
+
+            <textarea
+              className="input h-36"
+              placeholder="Write Solution..."
+              value={block.content}
+              onChange={e =>
+                updateSubBlock(
+                  i,
+                  block.id,
+                  {
+                    content: e.target.value,
+                  }
+                )
+              }
+            />
+          )}
+
+
+          {/* IMAGE */}
+          {block.type === "image" && (
+
+            <div className="space-y-3">
+
+              <img
+                src={block.image_url}
+                alt="solution"
+                className="rounded-2xl border max-h-[400px]"
+              />
+
+              <input
+                className="input"
+                placeholder="Caption (Optional)"
+                value={block.caption || ""}
+                onChange={e =>
+                  updateSubBlock(
+                    i,
+                    block.id,
+                    {
+                      caption: e.target.value,
+                    }
+                  )
+                }
+              />
+
+            </div>
+          )}
+
+        </div>
+      )
+    )}
+
+  </div>
+
+  {/* ADDition txt/img BLOCK ACTIONS */}
+  <div className="flex flex-wrap gap-3 mt-4">
+
+    <button
+      type="button"
+      onClick={() => addSubTextBlock(i)}
+      className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"
+    >
+      + Add Text Solution
+    </button>
+
+    <label className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm cursor-pointer">
+
+    + Add Image Solution
+
+      <input
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={async e => {
+
+          const file = e.target.files?.[0];
+
+          if (!file) return;
+
+          await addSubImageBlock(
+            i,
+            s.sq_no,
+            file
+          );
+        }}
+      />
+    </label>
+
+  </div>
+
+
+</>
+
+)}
+
+
+  
             </div>
           ))}
 
