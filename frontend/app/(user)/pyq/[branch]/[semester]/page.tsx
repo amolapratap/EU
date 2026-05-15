@@ -273,15 +273,15 @@ useEffect(() => {
 //--------------------------- FETCH SYLLABUS---------------------------
 
 
-useEffect(() => {
-  if (loadingPapers) return;
+// useEffect(() => {
+//   if (loadingPapers) return;
 
-  if (papers.length === 0) {
-    setViewMode("syllabus");
-  } else {
-    setViewMode("solution"); // ✅ auto switch back
-  }
-}, [papers, loadingPapers]);
+//   if (papers.length === 0) {
+//     setViewMode("syllabus");
+//   } else {
+//     setViewMode("solution"); // ✅ auto switch back
+//   }
+// }, [papers, loadingPapers]);
 
 
 useEffect(() => {
