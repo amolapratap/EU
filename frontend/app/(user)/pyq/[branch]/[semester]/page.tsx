@@ -829,14 +829,119 @@ useEffect(() => {
         )}
 
         {/* SOLUTION */}
-        {current.solution_md && (
+        {/* {current.solution_md && (
           <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded">
             <strong className="block mb-1">Solution</strong>
             <div className="mt-2 whitespace-pre-wrap">
               {current.solution_md}
             </div>
           </div>
-        )}
+        )} */}
+
+
+{/* SOLUTION */}
+
+                        {current?.solution_blocks?.length > 0 ? (
+
+                        <div className="space-y-5 mt-5">
+
+                          {current.solution_blocks.map(
+                            (block: any) => (
+
+                              <div key={block.id}>
+
+                                {/* TEXT BLOCK */}
+                                {block.type === "text" && (
+
+                                  <div className="
+                                    whitespace-pre-wrap
+                                    leading-8
+                                    text-[15px]
+                                    text-slate-800
+                                  ">
+
+                                    {block.content}
+
+                                  </div>
+                                )}
+
+
+                                {/* IMAGE BLOCK */}
+                                {block.type === "image" && (
+
+                                  <div className="space-y-2">
+
+                                    <img
+                                      src={block.image_url}
+                                      alt="solution"
+                                      className="
+                                        rounded-2xl
+                                        border
+                                        shadow-sm
+                                        max-w-full
+                                        mx-auto
+                                      "
+                                    />
+
+                                    {block.caption && (
+
+                                      <p className="
+                                        text-sm
+                                        text-slate-500
+                                        text-center
+                                      ">
+
+                                        {block.caption}
+
+                                      </p>
+                                    )}
+
+                                  </div>
+                                )}
+
+                              </div>
+                            )
+                          )}
+
+                        </div>
+
+                        ) : current?.solution_md ? (
+
+                        /* OLD FALLBACK */
+
+                        <div className="
+                          whitespace-pre-wrap
+                          leading-8
+                          text-[15px]
+                          text-slate-800
+                          mt-5
+                        ">
+
+                          {current.solution_md}
+
+                        </div>
+
+                        ) : (
+
+                        <div className="
+                          mt-6
+                          rounded-2xl
+                          border
+                          border-dashed
+                          bg-slate-50
+                          p-8
+                          text-center
+                          text-slate-500
+                        ">
+
+                          Solution will be available soon.
+
+                        </div>
+
+                        )}
+
+
+
       </>
     )}
 
