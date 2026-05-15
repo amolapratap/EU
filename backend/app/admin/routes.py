@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, UploadFile, File, Query
 from app.auth.dependencies import admin_required
 from app.auth.utils import get_current_admin
 from app.admin.controllers import *
+from fastapi import Form
+
 
 
 # router = APIRouter(prefix="/ssb", tags=["Admin SSB"])
@@ -130,6 +132,21 @@ async def add_question(paper_id: str, body: dict, admin = Depends(get_current_ad
 async def update_question(paper_id: str, q_no: int, body: dict, admin = Depends(get_current_admin)):
     return await update_question_ctrl(paper_id, q_no, body, admin)
 
+
+# To Upload a img of a single quetion
+@router.post("/upload-solution-image")
+async def upload_solution_image_route(
+    file: UploadFile = File(...),
+    public_id: str = Form(...),
+    admin=Depends(get_current_admin)
+):
+
+    return await upload_solution_image_ctrl(
+        file,
+        public_id,
+        admin
+    )
+
 @router.delete("/papers/{paper_id}/questions/{q_no}")
 async def delete_question(paper_id: str, q_no: int, admin = Depends(get_current_admin)):
     return await delete_question_ctrl(paper_id, q_no, admin)
@@ -161,7 +178,6 @@ async def process_pdf(
 
 
 #===============ALL Upload rouetes===================
-from fastapi import Form
 # from controllers.upload_controller import upload_pdf_to_cloudinary
 
 @router.post("/upload-pdf")

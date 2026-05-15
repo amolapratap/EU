@@ -42,3 +42,41 @@ async def delete_file(public_id: str):
         logger.error(f"Cloudinary delete error: {str(e)}")
         print("Deleet Status",e)
         return False
+
+
+
+
+
+async def upload_solution_image(
+    file_bytes: bytes,
+    public_id: str
+):
+
+    try:
+
+        result = cloudinary.uploader.upload(
+            file_bytes,
+
+            folder="alpha_result",
+
+            public_id=public_id,
+
+            overwrite=True,
+
+            resource_type="image"
+        )
+
+        return {
+            "success": True,
+
+            "image_url": result.get("secure_url"),
+
+            "public_id": result.get("public_id")
+        }
+
+    except Exception as e:
+
+        return {
+            "success": False,
+            "error": str(e)
+        }

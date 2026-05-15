@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from app.database import db_instance
 from app.utils.mongo_serializer import mongo_to_json
 from app.utils.datetime import utcnow
+from app.utils.cloudinary_config import upload_solution_image
 from app.config import settings
 from fastapi import HTTPException, status, UploadFile
 from fastapi.responses import StreamingResponse, Response
@@ -470,6 +471,54 @@ async def update_question_ctrl(paper_id, q_no, body, admin):
     )
 
     return {"message": "Question updated"}
+
+
+# To uplaod a img on cloudnari of solution
+async def upload_solution_image_ctrl(
+    file,
+    public_id,
+    admin
+):
+
+    if not file.content_type.startswith("image/"):
+
+        raise HTTPException(
+            400,
+            "Only image files allowed"
+        )
+
+    MAX_SIZE = 10 * 1024 * 1024
+
+    file_bytes = await file.read()
+
+    if len(file_bytes) > MAX_SIZE:
+
+        raise HTTPException(
+            400,
+            "Image too large"
+        )
+
+    result = await upload_solution_image(
+        file_bytes,
+        public_id
+    )
+
+    if not result.get("success"):
+
+        raise HTTPException(
+            500,
+            result.get("error")
+        )
+
+    return {
+        "success": True,
+
+        "image_url":
+            result["image_url"],
+
+        "public_id":
+            result["public_id"]
+    }
 
 
 

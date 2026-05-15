@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { API_URL } from "@/lib/api";
 
@@ -150,7 +151,7 @@ export default function AdminPaperQuestionsPage() {
               <p className="mt-2 font-medium">{q.heading}</p>
             )}
 
-            {q.structure === "single" && (
+            {/* {q.structure === "single" && (
               <>
                 <p className="mt-3 whitespace-pre-wrap">
                   {q.question_md}
@@ -159,7 +160,73 @@ export default function AdminPaperQuestionsPage() {
                   {q.solution_md}
                 </p>
               </>
-            )}
+            )} */}
+
+{/* For render solution block including img */}
+{/* SINGLE QUESTION */}
+{q.structure === "single" && (
+
+<>
+
+  {/* QUESTION */}
+  <p className="mt-3 whitespace-pre-wrap">
+    {q.question_md}
+  </p>
+
+
+  {/* NEW BLOCK SYSTEM */}
+  {q.solution_blocks?.length > 0 ? (
+
+    <div className="space-y-4 mt-4">
+
+      {q.solution_blocks.map((block: any) => (
+
+        <div key={block.id}>
+
+          {/* TEXT */}
+          {block.type === "text" && (
+            <p className="text-green-400 whitespace-pre-wrap">
+              {block.content}
+            </p>
+          )}
+
+
+          {/* IMAGE */}
+          {block.type === "image" && (
+
+            <div className="space-y-2">
+
+              <img
+                src={block.image_url}
+                alt="solution"
+                className="rounded-2xl border max-h-[500px]"
+              />
+
+              {block.caption && (
+                <p className="text-sm text-slate-400">
+                  {block.caption}
+                </p>
+              )}
+
+            </div>
+          )}
+
+        </div>
+      ))}
+
+    </div>
+
+  ) : q.solution_md ? (
+
+    /* OLD FALLBACK */
+    <p className="mt-3 text-green-400 whitespace-pre-wrap">
+      {q.solution_md}
+    </p>
+
+  ) : null}
+
+</>
+)}
 
             {Array.isArray(q.sub_questions) && (
               <div className="mt-4 space-y-4">
@@ -206,6 +273,7 @@ export default function AdminPaperQuestionsPage() {
 
         {editor && (
           <QuestionEditor
+            paper={paper}
             paperId={paper_id}
             data={editor}
             onClose={() => setEditor(null)}
@@ -230,7 +298,39 @@ export default function AdminPaperQuestionsPage() {
    QUESTION EDITOR
 ===================================================== */
 
-function QuestionEditor({ paperId, data, onClose, onSaved }: any) {
+async function uploadSolutionImage(
+  file: File,
+  public_id: string
+) {
+
+  const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("public_id", public_id);
+
+  const res = await fetch(
+    `${API_URL}/admin/upload-solution-image`,
+    {
+      method: "POST",
+
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+
+      body: formData,
+    }
+  );
+
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json.detail || "Upload failed");
+  }
+
+  return json;
+}
+
+function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
   const isEdit = !!data.structure;
 
   const [qNo] = useState(data.q_no);
@@ -241,6 +341,11 @@ function QuestionEditor({ paperId, data, onClose, onSaved }: any) {
   const [question, setQuestion] = useState(data.question_md || "");
   const [solution, setSolution] = useState(data.solution_md || "");
   const [subs, setSubs] = useState<any[]>(data.sub_questions || []);
+
+  const [solutionBlocks, setSolutionBlocks] = useState<any[]>(
+    data.solution_blocks || []
+  );
+
 
   useEffect(() => {
     if (structure === "single") setNature("subjective");
@@ -298,6 +403,98 @@ function QuestionEditor({ paperId, data, onClose, onSaved }: any) {
     setSubs(prev => reIndex(prev.filter((_, idx) => idx !== i)));
   }
 
+  // New for solution_block
+  function addTextBlock() {
+
+    setSolutionBlocks(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        type: "text",
+        content: "",
+      },
+    ]);
+  }
+  
+  
+  async function addImageBlock(file: File) {
+  
+    try {
+  
+      const imageIndex =
+        solutionBlocks.filter(
+          b => b.type === "image"
+        ).length + 1;
+  
+  
+      const public_id =
+        `solutions/${paper.subject_code}` +
+        `/q_${qNo}` +
+        `/img_${imageIndex}`;
+  
+  
+      toast.loading("Uploading image...", {
+        id: "solution-upload"
+      });
+  
+  
+      const res = await uploadSolutionImage(
+        file,
+        public_id
+      );
+  
+  
+      setSolutionBlocks(prev => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+  
+          type: "image",
+  
+          image_url: res.image_url,
+  
+          public_id: res.public_id,
+  
+          caption: "",
+        },
+      ]);
+  
+  
+      toast.success("Image uploaded", {
+        id: "solution-upload"
+      });
+  
+    } catch (err: any) {
+  
+      toast.error(
+        err.message || "Upload failed"
+      );
+    }
+  }
+  
+  
+  function updateBlock(
+    id: string,
+    patch: any
+  ) {
+  
+    setSolutionBlocks(prev =>
+      prev.map(block =>
+        block.id === id
+          ? { ...block, ...patch }
+          : block
+      )
+    );
+  }
+  
+  
+  function removeBlock(id: string) {
+  
+    setSolutionBlocks(prev =>
+      prev.filter(block => block.id !== id)
+    );
+  }
+
   async function save() {
     if (!canSave()) {
       alert("Fill all mandatory fields");
@@ -313,7 +510,12 @@ function QuestionEditor({ paperId, data, onClose, onSaved }: any) {
 
     if (structure === "single") {
       payload.question_md = question;
-      payload.solution_md = solution;
+      // payload.solution_md = solution;
+      // payload.solution_md = solution;
+    if (solutionBlocks.length > 0) {
+      payload.solution_blocks = solutionBlocks;
+    }
+
     } else {
       payload.heading = heading;
       payload.sub_questions = subs;
@@ -335,6 +537,28 @@ function QuestionEditor({ paperId, data, onClose, onSaved }: any) {
     onSaved();
     onClose();
   }
+
+
+  useEffect(() => {
+
+    if (
+      structure === "single" &&
+      nature === "subjective" &&
+      solutionBlocks.length === 0
+    ) {
+  
+      setSolutionBlocks([
+        {
+          id: crypto.randomUUID(),
+  
+          type: "text",
+  
+          content: "",
+        },
+      ]);
+    }
+  
+  }, [structure, nature]);
 
   /* UI unchanged below */
   
@@ -361,7 +585,7 @@ function QuestionEditor({ paperId, data, onClose, onSaved }: any) {
         <option value="multi">With Sub-questions</option>
       </select>
 
-      {structure === "single" && (
+      {/* {structure === "single" && (
         <>
           <textarea
             className="input h-32"
@@ -376,7 +600,144 @@ function QuestionEditor({ paperId, data, onClose, onSaved }: any) {
             onChange={e => setSolution(e.target.value)}
           />
         </>
-      )}
+      )} */}
+
+{/* New for extend image */}
+{structure === "single" && (
+
+<>
+
+  <textarea
+    className="input h-32"
+    placeholder="Question (Markdown + LaTeX)"
+    value={question}
+    onChange={e => setQuestion(e.target.value)}
+  />
+
+
+  {/* OLD MARKDOWN SOLUTION */}
+  {/* <textarea
+    className="input h-40"
+    placeholder="Legacy solution_md (optional)"
+    value={solution}
+    onChange={e => setSolution(e.target.value)}
+  /> */}
+
+
+  {/* txt/img preview edit BLOCKS */}
+  <div className="space-y-4 mt-4">
+
+    {solutionBlocks.map((block, index) => (
+
+      <div
+        key={block.id}
+        className="border border-white/10 rounded-2xl p-4 bg-[#11172C]"
+      >
+
+        <div className="flex justify-between items-center mb-3">
+
+          <p className="text-sm text-slate-400 font-medium">
+            Block {index + 1} • {block.type}
+          </p>
+
+          <button
+            onClick={() => removeBlock(block.id)}
+            className="text-red-400 text-sm"
+          >
+            Remove
+          </button>
+
+        </div>
+
+
+        {/* TEXT BLOCK */}
+        {block.type === "text" && (
+
+          <textarea
+            className="input h-40"
+            placeholder="Write explanation..."
+            value={block.content}
+            onChange={e =>
+              updateBlock(block.id, {
+                content: e.target.value,
+              })
+            }
+          />
+        )}
+
+
+        {/* IMAGE BLOCK */}
+        {block.type === "image" && (
+
+          <div className="space-y-3">
+
+            <img
+              src={block.image_url}
+              alt="solution"
+              className="rounded-2xl border max-h-[400px] object-contain bg-black/20"
+            />
+
+            <input
+              className="input"
+              placeholder="Image caption (optional)"
+              value={block.caption || ""}
+              onChange={e =>
+                updateBlock(block.id, {
+                  caption: e.target.value,
+                })
+              }
+            />
+
+          </div>
+        )}
+
+      </div>
+    ))}
+
+  </div>
+
+
+  {/* ADDition txt/img BLOCK ACTIONS */}
+  <div className="flex flex-wrap gap-3">
+
+    <button
+      type="button"
+      onClick={addTextBlock}
+      className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"
+    >
+      + Add Text Solution
+    </button>
+
+
+    <label className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm cursor-pointer">
+      + Add Image Solution
+
+      <input
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={async e => {
+
+          const file = e.target.files?.[0];
+
+          if (!file) return;
+
+          await addImageBlock(file);
+        }}
+      />
+    </label>
+
+  </div>
+
+
+
+</>
+)}
+
+
+
+
+{/* For sub-questions */}
 
       {structure === "multi" && (
         <>
