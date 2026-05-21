@@ -15,6 +15,9 @@ import { useSwipeable } from "react-swipeable";
 import { useParams, useRouter } from 'next/navigation';
 import { Share2, Share, RefreshCw } from "lucide-react";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 
 
 export default function PYQPage() {
@@ -273,15 +276,15 @@ useEffect(() => {
 //--------------------------- FETCH SYLLABUS---------------------------
 
 
-useEffect(() => {
-  if (loadingPapers) return;
+// useEffect(() => {
+//   if (loadingPapers) return;
 
-  if (papers.length === 0) {
-    setViewMode("syllabus");
-  } else {
-    setViewMode("solution"); // ✅ auto switch back
-  }
-}, [papers, loadingPapers]);
+//   if (papers.length === 0) {
+//     setViewMode("syllabus");
+//   } else {
+//     setViewMode("solution"); // ✅ auto switch back
+//   }
+// }, [papers, loadingPapers]);
 
 
 useEffect(() => {
@@ -797,9 +800,33 @@ useEffect(() => {
 
         {/* QUESTION TEXT */}
         {current.question_md && (
-          <p className="whitespace-pre-wrap">
-            {current.question_md}
-          </p>
+          // <p className="whitespace-pre-wrap">
+          //   {current.question_md}
+          // </p>
+
+          <div
+  className="
+    whitespace-pre-wrap
+    leading-8
+    text-[16px]
+    font-medium
+    text-slate-800
+    bg-gradient-to-br
+    from-indigo-50
+    to-white
+    border
+    border-indigo-100
+    rounded-2xl
+    p-5
+    shadow-sm
+  "
+>
+
+  {current.question_md}
+
+</div>
+
+          
         )}
 
         {/* OBJECTIVE OPTIONS */}
@@ -829,14 +856,139 @@ useEffect(() => {
         )}
 
         {/* SOLUTION */}
-        {current.solution_md && (
+        {/* {current.solution_md && (
           <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded">
             <strong className="block mb-1">Solution</strong>
             <div className="mt-2 whitespace-pre-wrap">
               {current.solution_md}
             </div>
           </div>
-        )}
+        )} */}
+
+
+{/* SOLUTION */}
+
+                        {current?.solution_blocks?.length > 0 ? (
+
+                        <div className="space-y-5 mt-5">
+
+                          {current.solution_blocks.map(
+                            (block: any) => (
+
+                              <div key={block.id}>
+
+                                {/* TEXT BLOCK */}
+                                {block.type === "text" && (
+
+                                  <div className="
+                                    whitespace-pre-wrap
+                                    leading-8
+                                    text-[15px]
+                                    text-slate-800
+                                  ">
+
+                                    {/* {block.content} */}
+
+                                    {/* <ReactMarkdown>
+  {block.content}
+</ReactMarkdown> */}
+
+<div className="
+  prose
+  prose-slate
+  max-w-none
+  leading-8
+">
+
+  <ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+  >
+
+    {block.content}
+
+  </ReactMarkdown>
+
+</div>
+                                  </div>
+                                )}
+
+
+                                {/* IMAGE BLOCK */}
+                                {block.type === "image" && (
+
+                                  <div className="space-y-2">
+
+                                    <img
+                                      src={block.image_url}
+                                      alt="solution"
+                                      className="
+                                        rounded-2xl
+                                        border
+                                        shadow-sm
+                                        max-w-full
+                                        mx-auto
+                                      "
+                                    />
+
+                                    {block.caption && (
+
+                                      <p className="
+                                        text-sm
+                                        text-slate-500
+                                        text-center
+                                      ">
+
+                                        {block.caption}
+
+                                      </p>
+                                    )}
+
+                                  </div>
+                                )}
+
+                              </div>
+                            )
+                          )}
+
+                        </div>
+
+                        ) : current?.solution_md ? (
+
+                        /* OLD FALLBACK */
+
+                        <div className="
+                          whitespace-pre-wrap
+                          leading-8
+                          text-[15px]
+                          text-slate-800
+                          mt-5
+                        ">
+
+                          {current.solution_md}
+
+                        </div>
+
+                        ) : (
+
+                        <div className="
+                          mt-6
+                          rounded-2xl
+                          border
+                          border-dashed
+                          bg-slate-50
+                          p-8
+                          text-center
+                          text-slate-500
+                        ">
+
+                          Solution will be available soon.
+
+                        </div>
+
+                        )}
+
+
+
       </>
     )}
 

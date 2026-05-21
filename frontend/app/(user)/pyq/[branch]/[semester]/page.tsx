@@ -15,6 +15,9 @@ import { useSwipeable } from "react-swipeable";
 import { useParams, useRouter } from 'next/navigation';
 import { Share2, Share, RefreshCw } from "lucide-react";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 
 
 export default function PYQPage() {
@@ -797,9 +800,33 @@ useEffect(() => {
 
         {/* QUESTION TEXT */}
         {current.question_md && (
-          <p className="whitespace-pre-wrap">
-            {current.question_md}
-          </p>
+          // <p className="whitespace-pre-wrap">
+          //   {current.question_md}
+          // </p>
+
+          <div
+  className="
+    whitespace-pre-wrap
+    leading-8
+    text-[16px]
+    font-medium
+    text-slate-800
+    bg-gradient-to-br
+    from-indigo-50
+    to-white
+    border
+    border-indigo-100
+    rounded-2xl
+    p-5
+    shadow-sm
+  "
+>
+
+  {current.question_md}
+
+</div>
+
+          
         )}
 
         {/* OBJECTIVE OPTIONS */}
@@ -860,8 +887,28 @@ useEffect(() => {
                                     text-slate-800
                                   ">
 
-                                    {block.content}
+                                    {/* {block.content} */}
 
+                                    {/* <ReactMarkdown>
+  {block.content}
+</ReactMarkdown> */}
+
+<div className="
+  prose
+  prose-slate
+  max-w-none
+  leading-8
+">
+
+  <ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+  >
+
+    {block.content}
+
+  </ReactMarkdown>
+
+</div>
                                   </div>
                                 )}
 
