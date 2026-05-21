@@ -39,7 +39,19 @@ export default function QuestionSelector({
   }, [activeQ?.sq?.sq_no]);
 
   return (
-    <div className="md:hidden bg-slate-50 border-t border-slate-200">
+    // <div className="md:hidden bg-slate-50 border-t border-slate-200">
+    <div
+  className="
+    lg:hidden
+    sticky
+    top-[72px]
+    z-40
+    bg-[#F9FAFF]/95
+    backdrop-blur
+    border-b
+    pb-3
+  "
+>
 
       {/* ================= MAIN QUESTIONS ================= */}
       <div

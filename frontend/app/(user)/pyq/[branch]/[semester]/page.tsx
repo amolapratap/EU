@@ -144,6 +144,37 @@ const handlers = useSwipeable({
       setActiveQ(flatQuestions[currentIndex + 1]);
     }
   }
+
+  function scrollToQuestion(
+    q: any,
+    sq?: any
+  ) {
+  
+    const key = sq
+      ? `${q.q_no}-${sq.sq_no}`
+      : `${q.q_no}`;
+  
+    const el = questionRefs.current[key];
+  
+    if (!el) return;
+  
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+//     const y =
+//   el.getBoundingClientRect().top +
+//   window.scrollY -
+//   120;
+
+// window.scrollTo({
+//   top: y,
+//   behavior: "smooth",
+// });
+  
+    setActiveQ({ q, sq });
+  }
   
   
 
@@ -326,7 +357,8 @@ useEffect(() => {
   }, []);
 
 
-  const current = activeQ?.sq ?? activeQ?.q;
+  // const current = activeQ?.sq ?? activeQ?.q;
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // const isUnavailable =
   // !current?.question_md &&
@@ -335,10 +367,10 @@ useEffect(() => {
 
   // const isUnavailable = !current;
 
-  const isUnavailable =
-  !current ||
-  !current.question_md ||
-  current.question_md.trim().length === 0;
+  // const isUnavailable =
+  // !current ||
+  // !current.question_md ||
+  // current.question_md.trim().length === 0;
 
 
 
@@ -394,7 +426,10 @@ useEffect(() => {
             <QuestionSelector
               paper={paper}
               activeQ={activeQ}
-              onSelect={setActiveQ}
+              // onSelect={setActiveQ}
+              onSelect={(item: any) =>
+                scrollToQuestion(item.q, item.sq)
+              }
             />
           )}
 
@@ -681,346 +716,821 @@ useEffect(() => {
 
 
 {viewMode === "solution" &&  (
-  <div className="bg-white rounded-xl shadow-md p-4 md:p-6 space-y-6">
+//   <div className="bg-white rounded-xl shadow-md p-4 md:p-6 space-y-6">
 
-{loadingPaper && (
-  <div className="flex items-center justify-center py-20">
-    <div className="animate-pulse text-slate-400">
-      Loading paper...
-    </div>
-  </div>
-)}
+// {loadingPaper && (
+//   <div className="flex items-center justify-center py-20">
+//     <div className="animate-pulse text-slate-400">
+//       Loading paper...
+//     </div>
+//   </div>
+// )}
 
-    {/* Top Navigation */}
-    <div className="flex justify-between items-center pt-6 mt-6">
-      <button
-        onClick={goPrev}
-        disabled={currentIndex <= 0}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                   bg-white text-slate-700 border border-slate-300
-                   hover:bg-slate-100
-                   disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        ← Previous
-      </button>
+//     {/* Top Navigation */}
+//     <div className="flex justify-between items-center pt-6 mt-6">
+//       <button
+//         onClick={goPrev}
+//         disabled={currentIndex <= 0}
+//         className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+//                    bg-white text-slate-700 border border-slate-300
+//                    hover:bg-slate-100
+//                    disabled:opacity-40 disabled:cursor-not-allowed"
+//       >
+//         ← Previous
+//       </button>
 
-      <button
-        onClick={goNext}
-        disabled={currentIndex >= flatQuestions.length - 1}
-        className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
-                   bg-indigo-600 text-white shadow-sm
-                   hover:bg-indigo-700
-                   disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        Next →
-      </button>
-    </div>
+//       <button
+//         onClick={goNext}
+//         disabled={currentIndex >= flatQuestions.length - 1}
+//         className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
+//                    bg-indigo-600 text-white shadow-sm
+//                    hover:bg-indigo-700
+//                    disabled:opacity-40 disabled:cursor-not-allowed"
+//       >
+//         Next →
+//       </button>
+//     </div>
 
-    {/* 🚨 AVAILABLE SOON BLOCK */}
-    {/* {!loadingSubjects  && !loadingPapers && !loadingPaper && isUnavailable ? ( */}
-    {isUnavailable ? ( 
-      loadingSubjects || loadingPapers || loadingPaper ? (
+//     {/* 🚨 AVAILABLE SOON BLOCK */}
+//     {/* {!loadingSubjects  && !loadingPapers && !loadingPaper && isUnavailable ? ( */}
+//     {isUnavailable ? ( 
+//       loadingSubjects || loadingPapers || loadingPaper ? (
 
-        <div className="space-y-6 animate-pulse">
+//         <div className="space-y-6 animate-pulse">
 
-    {/* title */}
-    <div className="h-6 w-1/3 bg-slate-200 rounded"></div>
+//     {/* title */}
+//     <div className="h-6 w-1/3 bg-slate-200 rounded"></div>
 
-    {/* paragraph */}
-    <div className="space-y-2">
-      <div className="h-4 bg-slate-200 rounded"></div>
-      <div className="h-4 bg-slate-200 rounded w-5/6"></div>
-      <div className="h-4 bg-slate-200 rounded w-2/3"></div>
-    </div>
+//     {/* paragraph */}
+//     <div className="space-y-2">
+//       <div className="h-4 bg-slate-200 rounded"></div>
+//       <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+//       <div className="h-4 bg-slate-200 rounded w-2/3"></div>
+//     </div>
 
-    {/* options */}
-    <div className="space-y-2">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="h-10 bg-slate-200 rounded"></div>
-      ))}
-    </div>
+//     {/* options */}
+//     <div className="space-y-2">
+//       {[...Array(4)].map((_, i) => (
+//         <div key={i} className="h-10 bg-slate-200 rounded"></div>
+//       ))}
+//     </div>
 
-  </div>
+//   </div>
         
 
-        // <div className="flex flex-col items-center justify-center py-20 text-center">
+//         // <div className="flex flex-col items-center justify-center py-20 text-center">
           
-        //   <div className="text-5xl font-bold text-indigo-600 tracking-wide">
-        //     LOADING
-        //     <div className="space-y-4">
-        //       {[...Array(5)].map((_, i) => (
-        //         <div key={i} className="h-16 bg-white rounded-xl animate-pulse" />
-        //       ))}
-        //     </div>
+//         //   <div className="text-5xl font-bold text-indigo-600 tracking-wide">
+//         //     LOADING
+//         //     <div className="space-y-4">
+//         //       {[...Array(5)].map((_, i) => (
+//         //         <div key={i} className="h-16 bg-white rounded-xl animate-pulse" />
+//         //       ))}
+//         //     </div>
 
-        //   </div>
-        // </div>
+//         //   </div>
+//         // </div>
 
-      ):(
+//       ):(
 
 
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+//         <div className="flex flex-col items-center justify-center py-20 text-center">
           
-        <div  className="text-3xl font-semibold text-slate-400 animate-pulse">
-          AVAILABLE SOON
-        </div>
+//         <div  className="text-3xl font-semibold text-slate-400 animate-pulse">
+//           AVAILABLE SOON
+//         </div>
 
-        <div className="text-center py-10 space-y-2">
-          <h3 className="text-lg font-semibold text-slate-700">
-            Content Not Available Yet
-          </h3>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
-            We are currently adding solutions and study materials for this subject. 
-            Please check back later or explore other subjects.
-          </p>
-        </div>
+//         <div className="text-center py-10 space-y-2">
+//           <h3 className="text-lg font-semibold text-slate-700">
+//             Content Not Available Yet
+//           </h3>
+//           <p className="text-sm text-slate-500 max-w-md mx-auto">
+//             We are currently adding solutions and study materials for this subject. 
+//             Please check back later or explore other subjects.
+//           </p>
+//         </div>
 
-        {/* <p className="mt-4 text-slate-500 text-sm max-w-md">
-          This question and its solution are currently being prepared.
-          Please check back later.
-        </p> */}
+//         {/* <p className="mt-4 text-slate-500 text-sm max-w-md">
+//           This question and its solution are currently being prepared.
+//           Please check back later.
+//         </p> */}
 
-      </div>
-        )
+//       </div>
+//         )
         
-    ) : (
-      <>
-        {/* QUESTION TITLE */}
-        <h3 className="text-xl font-semibold">
-          {QUESTION_LABEL}-{activeQ?.q.q_no}
-          {activeQ?.sq && ` (${activeQ.sq.sq_no})`}
-        </h3>
+//     ) : (
+//       <>
+//         {/* QUESTION TITLE */}
+//         <h3 className="text-xl font-semibold">
+//           {QUESTION_LABEL}-{activeQ?.q.q_no}
+//           {activeQ?.sq && ` (${activeQ.sq.sq_no})`}
+//         </h3>
 
-        {/* HEADING (if multi) */}
-        {activeQ?.q?.heading && (
-          <div className="text-slate-700 font-medium bg-slate-50 border-l-4 border-slate-300 px-4 py-2 rounded">
-            {activeQ.q.heading}
-          </div>
-        )}
+//         {/* HEADING (if multi) */}
+//         {activeQ?.q?.heading && (
+//           <div className="text-slate-700 font-medium bg-slate-50 border-l-4 border-slate-300 px-4 py-2 rounded">
+//             {activeQ.q.heading}
+//           </div>
+//         )}
 
-        {/* QUESTION TEXT */}
-        {current.question_md && (
-          // <p className="whitespace-pre-wrap">
-          //   {current.question_md}
-          // </p>
+//         {/* QUESTION TEXT */}
+//         {current.question_md && (
+//           // <p className="whitespace-pre-wrap">
+//           //   {current.question_md}
+//           // </p>
 
-          <div
-  className="
-    whitespace-pre-wrap
-    leading-8
-    text-[16px]
-    font-medium
-    text-slate-800
-    bg-gradient-to-br
-    from-indigo-50
-    to-white
-    border
-    border-indigo-100
-    rounded-2xl
-    p-5
-    shadow-sm
-  "
->
+//           <div
+//   className="
+//     whitespace-pre-wrap
+//     leading-8
+//     text-[16px]
+//     font-medium
+//     text-slate-800
+//     bg-gradient-to-br
+//     from-indigo-50
+//     to-white
+//     border
+//     border-indigo-100
+//     rounded-2xl
+//     p-5
+//     shadow-sm
+//   "
+// >
 
-  {current.question_md}
+//   {current.question_md}
 
-</div>
+// </div>
 
           
-        )}
+//         )}
 
-        {/* OBJECTIVE OPTIONS */}
-        {Array.isArray(current.options) && (
-          <div className="space-y-2">
-            {current.options.map((op: string, i: number) => {
-              const isCorrect = current.correct_index === i;
-              return (
-                <div
-                  key={i}
-                  className={`p-3 rounded border ${
-                    isCorrect
-                      ? "bg-green-50 border-green-400 text-green-800"
-                      : "bg-slate-50 border-slate-200"
-                  }`}
-                >
-                  <strong>{String.fromCharCode(65 + i)}.</strong> {op}
-                  {isCorrect && (
-                    <span className="ml-2 text-xs font-semibold">
-                      ✓ Correct
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+//         {/* OBJECTIVE OPTIONS */}
+//         {Array.isArray(current.options) && (
+//           <div className="space-y-2">
+//             {current.options.map((op: string, i: number) => {
+//               const isCorrect = current.correct_index === i;
+//               return (
+//                 <div
+//                   key={i}
+//                   className={`p-3 rounded border ${
+//                     isCorrect
+//                       ? "bg-green-50 border-green-400 text-green-800"
+//                       : "bg-slate-50 border-slate-200"
+//                   }`}
+//                 >
+//                   <strong>{String.fromCharCode(65 + i)}.</strong> {op}
+//                   {isCorrect && (
+//                     <span className="ml-2 text-xs font-semibold">
+//                       ✓ Correct
+//                     </span>
+//                   )}
+//                 </div>
+//               );
+//             })}
+//           </div>
+//         )}
 
-        {/* SOLUTION */}
-        {/* {current.solution_md && (
-          <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded">
-            <strong className="block mb-1">Solution</strong>
-            <div className="mt-2 whitespace-pre-wrap">
-              {current.solution_md}
-            </div>
-          </div>
-        )} */}
-
-
-{/* SOLUTION */}
-
-                        {current?.solution_blocks?.length > 0 ? (
-
-                        <div className="space-y-5 mt-5">
-
-                          {current.solution_blocks.map(
-                            (block: any) => (
-
-                              <div key={block.id}>
-
-                                {/* TEXT BLOCK */}
-                                {block.type === "text" && (
-
-                                  <div className="
-                                    whitespace-pre-wrap
-                                    leading-8
-                                    text-[15px]
-                                    text-slate-800
-                                  ">
-
-                                    {/* {block.content} */}
-
-                                    {/* <ReactMarkdown>
-  {block.content}
-</ReactMarkdown> */}
-
-<div className="
-  prose
-  prose-slate
-  max-w-none
-  leading-8
-">
-
-  <ReactMarkdown
-    remarkPlugins={[remarkGfm]}
-  >
-
-    {block.content}
-
-  </ReactMarkdown>
-
-</div>
-                                  </div>
-                                )}
+//         {/* SOLUTION */}
+//         {/* {current.solution_md && (
+//           <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded">
+//             <strong className="block mb-1">Solution</strong>
+//             <div className="mt-2 whitespace-pre-wrap">
+//               {current.solution_md}
+//             </div>
+//           </div>
+//         )} */}
 
 
-                                {/* IMAGE BLOCK */}
-                                {block.type === "image" && (
+// {/* SOLUTION */}
 
-                                  <div className="space-y-2">
+//                         {current?.solution_blocks?.length > 0 ? (
 
-                                    <img
-                                      src={block.image_url}
-                                      alt="solution"
-                                      className="
-                                        rounded-2xl
-                                        border
-                                        shadow-sm
-                                        max-w-full
-                                        mx-auto
-                                      "
-                                    />
+//                         <div className="space-y-5 mt-5">
 
-                                    {block.caption && (
+//                           {current.solution_blocks.map(
+//                             (block: any) => (
 
-                                      <p className="
-                                        text-sm
-                                        text-slate-500
-                                        text-center
-                                      ">
+//                               <div key={block.id}>
 
-                                        {block.caption}
+//                                 {/* TEXT BLOCK */}
+//                                 {block.type === "text" && (
 
-                                      </p>
-                                    )}
+//                                   <div className="
+//                                     whitespace-pre-wrap
+//                                     leading-8
+//                                     text-[15px]
+//                                     text-slate-800
+//                                   ">
 
-                                  </div>
-                                )}
+//                                     {/* {block.content} */}
 
-                              </div>
-                            )
-                          )}
+//                                     {/* <ReactMarkdown>
+//   {block.content}
+// </ReactMarkdown> */}
 
-                        </div>
+// <div className="
+//   prose
+//   prose-slate
+//   max-w-none
+//   leading-8
+// ">
 
-                        ) : current?.solution_md ? (
+//   <ReactMarkdown
+//     remarkPlugins={[remarkGfm]}
+//   >
 
-                        /* OLD FALLBACK */
+//     {block.content}
 
-                        <div className="
-                          whitespace-pre-wrap
-                          leading-8
-                          text-[15px]
-                          text-slate-800
-                          mt-5
-                        ">
+//   </ReactMarkdown>
 
-                          {current.solution_md}
-
-                        </div>
-
-                        ) : (
-
-                        <div className="
-                          mt-6
-                          rounded-2xl
-                          border
-                          border-dashed
-                          bg-slate-50
-                          p-8
-                          text-center
-                          text-slate-500
-                        ">
-
-                          Solution will be available soon.
-
-                        </div>
-
-                        )}
+// </div>
+//                                   </div>
+//                                 )}
 
 
+//                                 {/* IMAGE BLOCK */}
+//                                 {block.type === "image" && (
 
-      </>
-    )}
+//                                   <div className="space-y-2">
 
-    {/* Bottom Navigation */}
-    <div className="flex justify-between items-center pt-6 mt-6">
-      <button
-        onClick={goPrev}
-        disabled={currentIndex <= 0}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                   bg-white text-slate-700 border border-slate-300
-                   hover:bg-slate-100
-                   disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        ← Previous
-      </button>
+//                                     <img
+//                                       src={block.image_url}
+//                                       alt="solution"
+//                                       className="
+//                                         rounded-2xl
+//                                         border
+//                                         shadow-sm
+//                                         max-w-full
+//                                         mx-auto
+//                                       "
+//                                     />
 
-      <button
-        onClick={goNext}
-        disabled={currentIndex >= flatQuestions.length - 1}
-        className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
-                   bg-indigo-600 text-white shadow-sm
-                   hover:bg-indigo-700
-                   disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        Next →
-      </button>
-    </div>
+//                                     {block.caption && (
+
+//                                       <p className="
+//                                         text-sm
+//                                         text-slate-500
+//                                         text-center
+//                                       ">
+
+//                                         {block.caption}
+
+//                                       </p>
+//                                     )}
+
+//                                   </div>
+//                                 )}
+
+//                               </div>
+//                             )
+//                           )}
+
+//                         </div>
+
+//                         ) : current?.solution_md ? (
+
+//                         /* OLD FALLBACK */
+
+//                         <div className="
+//                           whitespace-pre-wrap
+//                           leading-8
+//                           text-[15px]
+//                           text-slate-800
+//                           mt-5
+//                         ">
+
+//                           {current.solution_md}
+
+//                         </div>
+
+//                         ) : (
+
+//                         <div className="
+//                           mt-6
+//                           rounded-2xl
+//                           border
+//                           border-dashed
+//                           bg-slate-50
+//                           p-8
+//                           text-center
+//                           text-slate-500
+//                         ">
+
+//                           Solution will be available soon.
+
+//                         </div>
+
+//                         )}
+
+
+
+//       </>
+//     )}
+
+//     {/* Bottom Navigation */}
+//     <div className="flex justify-between items-center pt-6 mt-6">
+//       <button
+//         onClick={goPrev}
+//         disabled={currentIndex <= 0}
+//         className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+//                    bg-white text-slate-700 border border-slate-300
+//                    hover:bg-slate-100
+//                    disabled:opacity-40 disabled:cursor-not-allowed"
+//       >
+//         ← Previous
+//       </button>
+
+//       <button
+//         onClick={goNext}
+//         disabled={currentIndex >= flatQuestions.length - 1}
+//         className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
+//                    bg-indigo-600 text-white shadow-sm
+//                    hover:bg-indigo-700
+//                    disabled:opacity-40 disabled:cursor-not-allowed"
+//       >
+//         Next →
+//       </button>
+//     </div>
 
 
     
 
+//   </div>
+
+
+<div className="space-y-10">
+
+{paper?.questions?.map((q: any) => (
+
+  <div
+    key={q.q_no}
+    className="
+      bg-white
+      rounded-3xl
+      border
+      shadow-sm
+      overflow-hidden
+    "
+  >
+
+    {/* HEADER */}
+    <div className="
+      px-6
+      py-5
+      border-b
+      bg-gradient-to-r
+      from-indigo-50
+      to-white
+    ">
+
+      <div className="flex items-center justify-between gap-4">
+
+        <div>
+
+          <h2 className="
+            text-2xl
+            font-bold
+            text-slate-900
+          ">
+
+            {QUESTION_LABEL}-{q.q_no}
+
+          </h2>
+
+          {q.heading && (
+
+            <p className="
+              text-slate-600
+              mt-2
+            ">
+
+              {q.heading}
+
+            </p>
+          )}
+
+        </div>
+
+
+        <div className="
+          text-sm
+          bg-indigo-100
+          text-indigo-700
+          px-4
+          py-2
+          rounded-full
+          font-medium
+        ">
+
+          {q.marks} Marks
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    {/* SINGLE QUESTION */}
+    {q.structure === "single" && (
+
+      <div
+        ref={(el) => {
+          questionRefs.current[
+            `${q.q_no}`
+          ] = el;
+        }}
+        className="p-6 space-y-5"
+      >
+
+        {q.question_md && (
+
+          <div
+            className="
+              whitespace-pre-wrap
+              leading-8
+              text-[16px]
+              font-medium
+              text-slate-800
+              bg-gradient-to-br
+              from-indigo-50
+              to-white
+              border
+              border-indigo-100
+              rounded-2xl
+              p-5
+            "
+          >
+
+            {q.question_md}
+
+          </div>
+        )}
+
+
+        {/* SOLUTION */}
+        {q.solution_blocks?.length > 0 ? (
+
+          <div className="space-y-5">
+
+            {q.solution_blocks.map(
+              (block: any) => (
+
+                <div key={block.id}>
+
+                  {/* TEXT */}
+                  {block.type === "text" && (
+
+                    <div className="
+                      prose
+                      prose-slate
+                      max-w-none
+                      leading-8
+                    ">
+
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                      >
+
+                        {block.content}
+
+                      </ReactMarkdown>
+
+                    </div>
+                  )}
+
+
+                  {/* IMAGE */}
+                  {block.type === "image" && (
+
+                    <div className="space-y-2">
+
+                      <img
+                        src={block.image_url}
+                        alt="solution"
+                        className="
+                          rounded-2xl
+                          border
+                          shadow-sm
+                          max-w-full
+                          mx-auto
+                        "
+                      />
+
+                      {block.caption && (
+
+                        <p className="
+                          text-sm
+                          text-slate-500
+                          text-center
+                        ">
+
+                          {block.caption}
+
+                        </p>
+                      )}
+
+                    </div>
+                  )}
+
+                </div>
+              )
+            )}
+
+          </div>
+
+        ) : q.solution_md ? (
+
+          <div className="
+            prose
+            prose-slate
+            max-w-none
+            leading-8
+          ">
+
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+            >
+
+              {q.solution_md}
+
+            </ReactMarkdown>
+
+          </div>
+
+        ) : (
+
+          <div className="
+            border
+            border-dashed
+            rounded-2xl
+            p-6
+            text-center
+            text-slate-500
+            bg-slate-50
+          ">
+
+            Solution available soon.
+
+          </div>
+        )}
+
+      </div>
+    )}
+
+
+    {/* MULTI QUESTION */}
+    {q.sub_questions?.length > 0 && (
+
+      // <div className="divide-y">
+      <div
+  ref={(el) => {
+    questionRefs.current[
+      `${q.q_no}`
+    ] = el;
+  }}
+  className="divide-y"
+>
+
+        {q.sub_questions.map((sq: any) => (
+
+          <div
+            key={sq.sq_no}
+            ref={(el) => {
+              questionRefs.current[
+                `${q.q_no}-${sq.sq_no}`
+              ] = el;
+            }}
+            className="p-6 space-y-5"
+          >
+
+            <div className="
+              flex
+              items-center
+              justify-between
+              gap-4
+            ">
+
+              <h3 className="
+                text-lg
+                font-bold
+                text-slate-900
+              ">
+
+                ({sq.sq_no})
+
+              </h3>
+
+              <div className="
+                text-xs
+                bg-slate-100
+                text-slate-700
+                px-3
+                py-1
+                rounded-full
+              ">
+
+                {sq.marks} Marks
+
+              </div>
+
+            </div>
+
+
+            {sq.question_md && (
+
+              <div
+                className="
+                  whitespace-pre-wrap
+                  leading-8
+                  text-[16px]
+                  font-medium
+                  text-slate-800
+                  bg-gradient-to-br
+                  from-indigo-50
+                  to-white
+                  border
+                  border-indigo-100
+                  rounded-2xl
+                  p-5
+                "
+              >
+
+                {sq.question_md}
+
+              </div>
+            )}
+
+{q.nature === "objective" &&
+  sq.options?.length > 0 && (
+
+  <div className="space-y-3">
+
+    {sq.options.map(
+      (option: string, idx: number) => (
+
+        <div
+          key={idx}
+          className={`
+            flex items-start gap-3
+            rounded-2xl
+            border
+            p-4
+            transition
+
+            ${
+              idx === sq.correct_index
+                ? "bg-emerald-50 border-emerald-200"
+                : "bg-white border-slate-200"
+            }
+          `}
+        >
+
+          <div className={`
+            w-7 h-7 rounded-full
+            flex items-center justify-center
+            text-sm font-bold shrink-0
+
+            ${
+              idx === sq.correct_index
+                ? "bg-emerald-600 text-white"
+                : "bg-slate-100 text-slate-700"
+            }
+          `}>
+
+            {String.fromCharCode(65 + idx)}
+
+          </div>
+
+          <div className="leading-7">
+
+            {option}
+
+          </div>
+
+        </div>
+      )
+    )}
+
   </div>
+)}
+
+
+            {/* SOLUTION */}
+            {sq.solution_blocks?.length > 0 ? (
+
+              <div className="space-y-5">
+
+                {sq.solution_blocks.map(
+                  (block: any) => (
+
+                    <div key={block.id}>
+
+                      {block.type === "text" && (
+
+                        <div className="
+                          prose
+                          prose-slate
+                          max-w-none
+                          leading-8
+                        ">
+
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                          >
+
+                            {block.content}
+
+                          </ReactMarkdown>
+
+                        </div>
+                      )}
+
+
+                      {block.type === "image" && (
+
+                        <div className="space-y-2">
+
+                          <img
+                            src={block.image_url}
+                            alt="solution"
+                            className="
+                              rounded-2xl
+                              border
+                              shadow-sm
+                              max-w-full
+                              mx-auto
+                            "
+                          />
+
+                          {block.caption && (
+
+                            <p className="
+                              text-sm
+                              text-slate-500
+                              text-center
+                            ">
+
+                              {block.caption}
+
+                            </p>
+                          )}
+
+                        </div>
+                      )}
+
+                    </div>
+                  )
+                )}
+
+              </div>
+
+            ) : sq.solution_md ? (
+
+              <div className="
+                prose
+                prose-slate
+                max-w-none
+                leading-8
+              ">
+
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                >
+
+                  {sq.solution_md}
+
+                </ReactMarkdown>
+
+              </div>
+
+            ) : (
+
+              <div className="
+                border
+                border-dashed
+                rounded-2xl
+                p-6
+                text-center
+                text-slate-500
+                bg-slate-50
+              ">
+
+                Solution available soon.
+
+              </div>
+            )}
+
+          </div>
+        ))}
+
+      </div>
+    )}
+
+  </div>
+))}
+
+</div>
 
 )}
 
@@ -1198,7 +1708,12 @@ useEffect(() => {
           className="hidden md:block h-full overflow-y-auto border-l bg-white"
           style={{ width: rightW }}
         >
-          <PanelRight paper={paper} activeQ={activeQ} onSelect={setActiveQ} />
+          <PanelRight 
+          paper={paper} 
+          activeQ={activeQ} 
+          // onSelect={setActiveQ}
+          onSelect={scrollToQuestion}
+          />
         </aside>
       )}
 
@@ -1228,10 +1743,11 @@ useEffect(() => {
           <PanelRight
             paper={paper}
             activeQ={activeQ}
-            onSelect={(v: any) => {
-              setActiveQ(v);
-              setShowRightMobile(false);
-            }}
+            // onSelect={(v: any) => {
+            //   setActiveQ(v);
+            //   setShowRightMobile(false);
+            // }}
+            onSelect={scrollToQuestion}
           />
         </MobileDrawer>
       )}
@@ -1389,13 +1905,14 @@ function PanelRight({ paper, activeQ, onSelect }: any) {
             {/* MAIN QUESTION */}
             <button
               // onClick={() => onSelect({ q })}
-              onClick={() => {
-                if (q.sub_questions?.length) {
-                  onSelect({ q, sq: q.sub_questions[0] });
-                } else {
-                  onSelect({ q });
-                }
-              }}
+              // onClick={() => {
+              //   if (q.sub_questions?.length) {
+              //     onSelect({ q, sq: q.sub_questions[0] });
+              //   } else {
+              //     onSelect({ q });
+              //   }
+              // }}
+              onClick={() => onSelect(q)}
               className={`block w-full text-left px-2 py-1 rounded font-medium ${
                 isMainActive && !activeQ?.sq
                   ? "bg-indigo-100 text-indigo-700"
@@ -1415,7 +1932,8 @@ function PanelRight({ paper, activeQ, onSelect }: any) {
                 return (
                   <button
                     key={sq.sq_no}
-                    onClick={() => onSelect({ q, sq })}
+                    // onClick={() => onSelect({ q, sq })}
+                    onClick={() => onSelect(q, sq)}
                     className={`block w-full text-left ml-4 px-2 py-1 rounded ${
                       isSubActive
                         ? "bg-blue-100 text-blue-700"
