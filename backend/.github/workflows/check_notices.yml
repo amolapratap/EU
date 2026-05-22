@@ -1,0 +1,16 @@
+name: Check BEU Notices
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+
+  workflow_dispatch:
+
+jobs:
+  ping-api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call Backend API
+        run: |
+          curl -X GET "https://apialpharesult.vercel.app/cron/check-notices"
