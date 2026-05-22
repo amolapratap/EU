@@ -11,6 +11,12 @@
         "src": "/(.*)",
         "dest": "app/main.py"
       }
+    ],
+    "crons": [
+      {
+        "path": "/cron/check-notices",
+        "schedule": "*/5 * * * *"
+      }
     ]
   }
   
