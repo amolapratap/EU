@@ -11,7 +11,7 @@ import {
   Eye,
 } from "lucide-react";
 
-import { BRANCHES, ALL_SEMESTERS } from "@/lib/constants/academic";
+import { ALL_BRANCHES, ALL_SEMESTERS } from "@/lib/constants/academic";
 
 import { createMissingPaper } from "../services/missingPaperApi";
 
@@ -281,7 +281,7 @@ export default function AddMissingPaperDialog({
                   Select Branch
                 </option>
 
-                {BRANCHES.map((branch) => (
+                {ALL_BRANCHES.map((branch) => (
                   <option
                     key={branch.code}
                     value={branch.code}
