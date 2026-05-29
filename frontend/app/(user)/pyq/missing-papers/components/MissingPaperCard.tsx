@@ -99,7 +99,7 @@ import {
   } from "lucide-react";
   
   import {
-    BRANCHES,
+    ALL_BRANCHES,
   } from "@/lib/constants/academic";
   
   interface Props {
@@ -119,7 +119,7 @@ import {
       : "Contributed by a Student";
   
     const branch =
-      BRANCHES.find(
+      ALL_BRANCHES.find(
         (b) => b.code === paper.branch_code
       )?.short_name || paper.branch_code;
   

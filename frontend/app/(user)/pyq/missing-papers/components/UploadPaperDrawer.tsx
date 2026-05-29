@@ -16,7 +16,7 @@ import {
 import { uploadPublicPaper } from "../services/missingPaperApi";
 
 import {
-    BRANCHES,
+    ALL_BRANCHES,
   } from "@/lib/constants/academic";
 
 interface Props {
@@ -183,7 +183,7 @@ export default function UploadPaperDrawer({
                 <div className="bg-white border border-gray-200 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full">
 
                     {
-                    BRANCHES.find(
+                    ALL_BRANCHES.find(
                         (b) =>
                         b.code === paper.branch_code
                     )?.short_name
