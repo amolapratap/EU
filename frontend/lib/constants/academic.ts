@@ -111,14 +111,14 @@ export const SEMESTERS = [
         full_name: "Electrical and Electronics Engineering",
     },
     {
-      code: "104",
-      short_name: "ECE",
-      full_name: "Electronics and Communication Engineering",
-    },
-    {
       code: "103",
       short_name: "EE",
       full_name: "Electrical Engineering",
+    },
+    {
+      code: "104",
+      short_name: "ECE",
+      full_name: "Electronics and Communication Engineering",
     },
     
     {
