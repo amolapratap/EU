@@ -1,6 +1,6 @@
 export const SEMESTERS = [
     { code: "1", name: "Semester 1" },
-    // { code: "2", name: "Semester 2" },
+    { code: "2", name: "Semester 2" },
     { code: "3", name: "Semester 3" },
     { code: "4", name: "Semester 4" },
     { code: "5", name: "Semester 5" },
