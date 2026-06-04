@@ -259,7 +259,7 @@ fix/solution-rendering
 
 # Future Roadmap
 
-*Interactive Quiz Mode
+* Interactive Quiz Mode
 
 Convert objective questions into an interactive quiz experience.
 
@@ -273,7 +273,7 @@ Exam simulation mode
 Accuracy tracking
 
 
-*AI Solution Evaluator
+* AI Solution Evaluator
 
 Allow students to evaluate their own answers using AI.
 
