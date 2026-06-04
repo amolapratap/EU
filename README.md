@@ -259,7 +259,7 @@ fix/solution-rendering
 
 # Future Roadmap
 
-Interactive Quiz Mode
+*Interactive Quiz Mode
 
 Convert objective questions into an interactive quiz experience.
 
@@ -299,15 +299,6 @@ Handwritten answer evaluation (image upload)
 Example Output:
 
 Accuracy Score: 82%
-
-Covered:
-✔ Definition
-✔ Diagram
-✔ Advantages
-
-Missing:
-✘ Limitations
-✘ Real-world examples
 
 Estimated Marks:
 11 / 14
