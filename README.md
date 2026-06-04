@@ -199,66 +199,66 @@ Schedule:
 
 # Environment Variables
 
-Frontend (.env.local)
-## Backend API
+##Frontend (.env.local)
+### Backend API
 NEXT_PUBLIC_API_URL=http://localhost:8000
 
-## OneSignal
+### OneSignal
 NEXT_PUBLIC_ONESIGNAL_APP_ID=
 
-## Google Analytics
+### Google Analytics
 NEXT_PUBLIC_GA_ID=
 Backend (.env)
 
 
-# SECURITY
+### SECURITY
 
 JWT_SECRET=
 JWT_ALGORITHM=
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
-# DATABASE
+### DATABASE
 
 MONGO_URI=
 DATABASE_NAME=
 
-# CLOUDINARY
+### CLOUDINARY
 
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
-# TELEGRAM ALERTS
+### TELEGRAM ALERTS
 
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 
 
-# ONESIGNAL PUSH NOTIFICATIONS
+### ONESIGNAL PUSH NOTIFICATIONS
 
 ONESIGNAL_APP_ID=
 ONESIGNAL_API_KEY=
 
-# NOTICE SCHEDULER
+### NOTICE SCHEDULER
 
 CRON_SECRET=
 
-# CORS
+### CORS
 
 FRONTEND_URL=http://localhost:3000
 
-# Production Example:
-# FRONTEND_URL=https://alpharesult.in
+### Production Example:
+### FRONTEND_URL=https://alpharesult.in
 
 
 # Local Development
 
-Frontend
+### Frontend
 
 npm install
 npm run dev
 
-Backend
+### Backend
 
 pip install -r requirements.txt
 uvicorn app.main:app --reload
