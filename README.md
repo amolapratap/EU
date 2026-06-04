@@ -199,25 +199,57 @@ Schedule:
 
 # Environment Variables
 
-Frontend
+Frontend (.env.local)
+## Backend API
+NEXT_PUBLIC_API_URL=http://localhost:8000
 
-NEXT_PUBLIC_API_URL=
+## OneSignal
 NEXT_PUBLIC_ONESIGNAL_APP_ID=
 
-Backend
+## Google Analytics
+NEXT_PUBLIC_GA_ID=
+Backend (.env)
+
+
+# SECURITY
+
+JWT_SECRET=
+JWT_ALGORITHM=
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+# DATABASE
 
 MONGO_URI=
-JWT_SECRET=
+DATABASE_NAME=
+
+# CLOUDINARY
+
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
+# TELEGRAM ALERTS
+
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 
+
+# ONESIGNAL PUSH NOTIFICATIONS
+
+ONESIGNAL_APP_ID=
+ONESIGNAL_API_KEY=
+
+# NOTICE SCHEDULER
+
 CRON_SECRET=
 
----
+# CORS
+
+FRONTEND_URL=http://localhost:3000
+
+# Production Example:
+# FRONTEND_URL=https://alpharesult.in
+
 
 # Local Development
 
