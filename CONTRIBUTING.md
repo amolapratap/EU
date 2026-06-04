@@ -2,7 +2,15 @@
 npm install ( package )
 npm run dev
 
+
+
 #To run backend
+
+##Backend start
+uvicorn app.main:app --reload
+
+
+## To set-up Backend
 - install python
 python -m venv venv (create virtual environment)
 venv\Scripts\activate ( activate virtual env.[you should see (venv)])
