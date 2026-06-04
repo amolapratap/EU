@@ -281,7 +281,7 @@ Built to help BEU students learn faster, prepare better, and help their juniors.
 
 
 
-
+<!-- 
 git config --global user.email
 git config --global user.name
 
@@ -290,4 +290,4 @@ git config --global user.email "new-vercel-email@gmail.com"
 
 npm install react-select
 
-time = datetime.now(timezone.utc).replace(tzinfo=None)
+time = datetime.now(timezone.utc).replace(tzinfo=None) -->
