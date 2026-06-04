@@ -259,14 +259,61 @@ fix/solution-rendering
 
 # Future Roadmap
 
-* Browser Push Notifications
-* Telegram Auto Alerts
-* Email Notifications
-* AI Assisted Solutions
-* Mobile App
+Interactive Quiz Mode
+
+Convert objective questions into an interactive quiz experience.
+
+Features:
+
+Attempt MCQs directly on the platform
+Instant answer checking
+Explanations after submission
+Topic-wise practice
+Exam simulation mode
+Accuracy tracking
+
+
+*AI Solution Evaluator
+
+Allow students to evaluate their own answers using AI.
+
+Workflow:
+
+Question
+↓
+Student writes answer OR uploads answer image
+↓
+AI compares with model solution
+↓
+Generates feedback
+
+Features:
+
+Accuracy percentage score
+Missing points detection
+Strengths and weaknesses analysis
+Improvement suggestions
+Marks estimation
+Handwritten answer evaluation (image upload)
+
+Example Output:
+
+Accuracy Score: 82%
+
+Covered:
+✔ Definition
+✔ Diagram
+✔ Advantages
+
+Missing:
+✘ Limitations
+✘ Real-world examples
+
+Estimated Marks:
+11 / 14
+
 * Contributor Leaderboard
 * Advanced Search
-* Solution Voting System
 
 ---
 
