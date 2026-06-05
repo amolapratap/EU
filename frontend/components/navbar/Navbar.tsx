@@ -20,7 +20,7 @@ const USER_NAV: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/pyq/download", label: "PYQs" },
   { href: "/pyq", label: "Solution" },
-  { href: "/result", label: "Result"},
+  // { href: "/result", label: "Result"},
   { href: "/cgpa", label: "CGPA" },
   { href: "/pyq/missing-papers", label: "Missing Papers"},
   { href: "/about", label: "About" },

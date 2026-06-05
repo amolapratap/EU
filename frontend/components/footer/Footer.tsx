@@ -90,7 +90,7 @@ export default function Footer() {
           <ul className="space-y-2 text-sm">
             <li><Link href="/pyq/download" className="hover:text-white">PYQs</Link></li>
             <li><Link href="/pyq" className="hover:text-white">Solution</Link></li>
-            <li><Link href="/result" className="hover:text-white">Result</Link></li>
+            {/* <li><Link href="/result" className="hover:text-white">Result</Link></li> */}
             <li><Link href="/cgpa" className="hover:text-white">CGPA</Link></li>
             <li><Link href="/about" className="hover:text-white">About</Link></li>
           </ul>
