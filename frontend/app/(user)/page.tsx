@@ -64,7 +64,7 @@ export default function HomePage() {
 
         
 
-        <Link
+        {/* <Link
           href="/result"
           className="px-8 py-3 rounded-xl border border-white/40
                      bg-white/10 backdrop-blur
@@ -72,7 +72,7 @@ export default function HomePage() {
                      font-semibold transition"
         >
           Check Result
-        </Link>
+        </Link> */}
 
         <Link
           href="/cgpa"
