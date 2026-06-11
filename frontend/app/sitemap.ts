@@ -103,7 +103,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "",
     "/pyq",
     "/pyq/download",
-    "/result",
+    // "/result",
     "/help", // 🔥 ADD THIS
     "/about",
     "/contact-us",
