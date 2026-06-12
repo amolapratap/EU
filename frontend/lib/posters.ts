@@ -2,6 +2,8 @@ const BRANCH_SLUG_MAP: Record<string, string> = {
     "105": "cse",
     "101": "civil",
     "102": "me",
+    "103": "ee",
+    "104": "ece",
     "110": "eee",
   };
   
