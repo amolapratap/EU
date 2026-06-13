@@ -498,35 +498,228 @@ links.map(link => (
 
       {/* MOBILE MENU */}
 {/* MOBILE MENU */}
-      {open && (
-        <div className="md:hidden bg-white border-t px-6 py-4 space-y-4">
-            {links.map(link => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setOpen(false)} // close menu on click
-                    className="block text-slate-700 hover:text-[#5B2EBD]"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+    
 
-          {/* <Link href="/" className="block">Home</Link>
-          <Link href="/pyq" className="block">PYQs</Link>
-          <Link href="/cgpa" className="block">CGPA</Link> */}
-          {/* <Link href="/result" className="block">Result</Link> */}
-          {/* <Link href="/about" className="block">About</Link> */}
+      {/* MOBILE MENU */}
+{open && (
+  <div className="md:hidden bg-white border-t px-6 py-4 space-y-4">
 
-          {!user ? (
-            <button onClick={showLogin} className="btn-primary">
-              Sign In
-            </button>
-          ) : (
-            <Link href="/account" className="block">Account</Link>
-          )}
-      
-        </div>
-      )}
+    {isAdminArea ? (
+
+      <>
+        {links.map(link => (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={() => setOpen(false)}
+            className="block text-slate-700 hover:text-[#5B2EBD]"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </>
+
+    ) : (
+
+      <>
+        {/* HOME */}
+        <Link
+          href="/"
+          onClick={() => setOpen(false)}
+          // className="block text-slate-700 hover:text-[#5B2EBD]"
+          className="
+  block
+  px-2 py-2
+  rounded-lg
+  text-slate-700
+  hover:bg-indigo-50
+  hover:text-[#5B2EBD]
+  transition
+"
+        >
+          Home
+        </Link>
+
+        {/* PYQs */}
+        <details>
+          <summary className="cursor-pointer font-medium">
+            PYQs
+          </summary>
+
+          <div className="pl-4 mt-3 space-y-3">
+
+            {SEMESTERS.map((sem) => (
+              <details key={sem.code}>
+
+                <summary className="cursor-pointer text-sm font-medium">
+                  {sem.name}
+                </summary>
+
+                <div className="grid grid-cols-2 gap-2 pl-3 mt-2">
+
+                  {BRANCHES.map((branch) => (
+                    <Link
+                      key={branch.code}
+                      href={`/pyq/download/${branch.code}/sem-${sem.code}`}
+                      onClick={() => setOpen(false)}
+                      className="text-sm text-slate-600 hover:text-[#5B2EBD]"
+                    >
+                      {branch.short_name}
+                    </Link>
+                  ))}
+
+                </div>
+
+              </details>
+            ))}
+
+          </div>
+        </details>
+
+        {/* SOLUTION */}
+        <details>
+          <summary className="cursor-pointer font-medium">
+            Solution
+          </summary>
+
+          <div className="pl-4 mt-3 space-y-3">
+
+            {SEMESTERS.map((sem) => (
+              <details key={sem.code}>
+
+                <summary className="cursor-pointer text-sm font-medium">
+                  {sem.name}
+                </summary>
+
+                <div className="grid grid-cols-2 gap-2 pl-3 mt-2">
+
+                  {BRANCHES.map((branch) => (
+                    <Link
+                      key={branch.code}
+                      href={`/pyq/${branch.code}/sem-${sem.code}`}
+                      onClick={() => setOpen(false)}
+                      className="text-sm text-slate-600 hover:text-[#5B2EBD]"
+                    >
+                      {branch.short_name}
+                    </Link>
+                  ))}
+
+                </div>
+
+              </details>
+            ))}
+
+          </div>
+        </details>
+
+        {/* CGPA */}
+        <details>
+          <summary className="cursor-pointer font-medium">
+            CGPA
+          </summary>
+
+          <div className="pl-4 mt-3 space-y-3">
+
+            {SEMESTERS.map((sem) => (
+              <details key={sem.code}>
+
+                <summary className="cursor-pointer text-sm font-medium">
+                  {sem.name}
+                </summary>
+
+                <div className="grid grid-cols-2 gap-2 pl-3 mt-2">
+
+                  {BRANCHES.map((branch) => (
+                    <Link
+                      key={branch.code}
+                      // href={`/cgpa?branch=${branch.code}&semester=${sem.code}`}
+                      href={`/cgpa/${branch.code}/sem-${sem.code}`}
+                      onClick={() => setOpen(false)}
+                      className="text-sm text-slate-600 hover:text-[#5B2EBD]"
+                    >
+                      {branch.short_name}
+                    </Link>
+                  ))}
+
+                </div>
+
+              </details>
+            ))}
+
+          </div>
+        </details>
+
+        {/* OTHER LINKS */}
+        <Link
+          href="/pyq/missing-papers"
+          onClick={() => setOpen(false)}
+          // className="block text-slate-700 hover:text-[#5B2EBD]"
+          className="
+  block
+  px-2 py-2
+  rounded-lg
+  text-slate-700
+  hover:bg-indigo-50
+  hover:text-[#5B2EBD]
+  transition
+"
+        >
+          Missing Papers
+        </Link>
+
+        <Link
+          href="/about"
+          onClick={() => setOpen(false)}
+          className="block text-slate-700 hover:text-[#5B2EBD]"
+        >
+          About
+        </Link>
+
+        <Link
+          href="/help"
+          onClick={() => setOpen(false)}
+          className="block text-slate-700 hover:text-[#5B2EBD]"
+        >
+          Help
+        </Link>
+
+        <Link
+          href="/contact-us"
+          onClick={() => setOpen(false)}
+          className="block text-slate-700 hover:text-[#5B2EBD]"
+        >
+          Contact-Us
+        </Link>
+
+        {isAdmin && (
+          <Link
+            href="/admin"
+            onClick={() => setOpen(false)}
+            className="block text-slate-700 hover:text-[#5B2EBD]"
+          >
+            Admin Dashboard
+          </Link>
+        )}
+
+      </>
+
+    )}
+
+    {!user ? (
+      <button
+        onClick={showLogin}
+        className="btn-primary"
+      >
+        Sign In
+      </button>
+    ) : (
+      <Link href="/account" className="block">
+        Account
+      </Link>
+    )}
+
+  </div>
+)}
 
 
       
