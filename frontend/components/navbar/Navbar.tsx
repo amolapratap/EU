@@ -526,16 +526,7 @@ links.map(link => (
         <Link
           href="/"
           onClick={() => setOpen(false)}
-          // className="block text-slate-700 hover:text-[#5B2EBD]"
-          className="
-  block
-  px-2 py-2
-  rounded-lg
-  text-slate-700
-  hover:bg-indigo-50
-  hover:text-[#5B2EBD]
-  transition
-"
+          className="block text-slate-700 hover:text-[#5B2EBD]"
         >
           Home
         </Link>
@@ -653,16 +644,7 @@ links.map(link => (
         <Link
           href="/pyq/missing-papers"
           onClick={() => setOpen(false)}
-          // className="block text-slate-700 hover:text-[#5B2EBD]"
-          className="
-  block
-  px-2 py-2
-  rounded-lg
-  text-slate-700
-  hover:bg-indigo-50
-  hover:text-[#5B2EBD]
-  transition
-"
+          className="block text-slate-700 hover:text-[#5B2EBD]"
         >
           Missing Papers
         </Link>
