@@ -175,10 +175,7 @@ async def sgpa(body, current_user):
         if not sub.get("subject_credit"):
             # print(f"Credit missing for subject {sub["code"]}")
             continue
-            raise HTTPException(
-                status_code=400,
-                detail=f"Credit missing for subject {sub["code"]}"
-            )
+
 
         subject_map[sub["code"]] = {
             "credit": float(sub["subject_credit"]),
