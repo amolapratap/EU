@@ -14,6 +14,7 @@ from app.admin.routes import router as admin_router
 from app.user.routes import router as user_router
 from app.auth.google_routes import router as google_router
 from app.cron.routes import router as scheduler_router
+from app.quiz.routes import router as quiz_router
 
 
 
@@ -82,4 +83,7 @@ app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(user_router, prefix="/user", tags=['User'])
 app.include_router(google_router, prefix="/auth/google", tags=["GoogleAuth"])
 app.include_router(scheduler_router, prefix="/cron", tags=["Scheduler"])
+
+#  INCLUDE QUIZ ROUTER (NEW)
+app.include_router(quiz_router, prefix="/api/quiz", tags=["Quiz"])
 
