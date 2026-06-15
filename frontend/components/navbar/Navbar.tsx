@@ -55,13 +55,20 @@ function MegaMenu({
   openMenu: string | null;
   setOpenMenu: React.Dispatch<React.SetStateAction<string | null>>;
 }) {
-  const [activeSemester, setActiveSemester] = useState("1");
+  const [activeSemester, setActiveSemester] = useState("");
+  const [activeBranch, setActiveBranch] = useState("");
 
   return (
     <div
       className="relative"
       onMouseEnter={() => setOpenMenu(id)}
-      onMouseLeave={() => setOpenMenu(null)}
+      // onMouseLeave={() => setOpenMenu(null)}
+      onMouseLeave={() => {
+        setOpenMenu(null);
+    
+        setActiveSemester("");
+        setActiveBranch("");
+      }}
     >
       {/* <button className="hover:text-[#5B2EBD] font-medium">
         {label}
@@ -148,20 +155,44 @@ function MegaMenu({
 
             {BRANCHES.map((branch) => (
 
+
+
+
+
               <Link
-                key={branch.code}
+              key={branch.code}
+                onMouseEnter={() =>
+                  setActiveBranch(branch.code)
+                }
+                onClick={() => {
+                  setOpenMenu(null);
+                  setActiveSemester(null);
+                  setActiveBranch("");
+                }}
+                className={`
+                  w-full text-left px-5 py-4
+                  transition-colors
+
+                  ${
+                    activeBranch === branch.code
+                    ? "bg-[#1B21BD] text-white font-semibold"
+                     : "hover:bg-slate-100"
+                  }
+                `}
                 href={`${basePath}/${branch.code}/sem-${activeSemester}`}
-                className="
-                  px-4 py-3
-                  rounded-lg
-                  hover:bg-indigo-50
-                  hover:bg-slate-50
-                  hover:border-l-4
-                  hover:border-[#5B2EBD]
-                  hover:text-indigo-700
-                  transition
-                  flex justify-between
-                "
+                
+                // className="
+                //   px-4 py-3
+                //   rounded-lg
+                //   hover:bg-indigo-50
+                //   hover:bg-slate-50
+                //   hover:border-l-4
+                //   hover:border-[#5B2EBD]
+                //   hover:text-indigo-700
+                //   transition
+                //   flex justify-between
+                // "
+
               >
                 <span>{branch.full_name}</span>
 
