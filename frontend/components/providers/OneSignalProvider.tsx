@@ -87,12 +87,12 @@ export default function OneSignalProvider() {
         autoRegister: false,
       });
 
-      console.log("OneSignal Init");
+      // console.log("OneSignal Init");
 
-      console.log(
-        process.env
-          .NEXT_PUBLIC_ONESIGNAL_APP_ID
-      );
+      // console.log(
+      //   process.env
+      //     .NEXT_PUBLIC_ONESIGNAL_APP_ID
+      // );
 
     };
 
