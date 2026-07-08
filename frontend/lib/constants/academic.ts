@@ -4,7 +4,7 @@ export const SEMESTERS = [
     { code: "3", name: "Semester 3" },
     { code: "4", name: "Semester 4" },
     { code: "5", name: "Semester 5" },
-    // { code: "6", name: "Semester 6" },
+    { code: "6", name: "Semester 6" },
     { code: "7", name: "Semester 7" },
     { code: "8", name: "Semester 8" },
   ];
