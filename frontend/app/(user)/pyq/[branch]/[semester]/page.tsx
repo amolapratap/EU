@@ -17,6 +17,7 @@ import { Share2, Share, RefreshCw, ClipboardList } from "lucide-react";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
 
 
 
@@ -608,11 +609,12 @@ useEffect(() => {
 
 
 
-<div className="text-sm text-slate-600 text-center max-w-2xl mx-auto">
+<div className="text-sm text-slate-600 text-center max-w-2xl mx-auto space-y-4">
   <p>
     This section provides previous year questions along with detailed solutions for your selected subject. 
     Practicing these questions helps you understand exam patterns and improve your preparation.
   </p>
+  <McqTestPromoBanner variant="strip" />
 </div>
 
 

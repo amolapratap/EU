@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuthModal } from "@/components/auth/AuthModal";
 import { useAuth } from "@/lib/auth";
-import { Check } from "lucide-react";
+import { Check, ClipboardList } from "lucide-react";
+import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
 
 export default function HomePage() {
   const { showLogin, showSignup } = useAuthModal();
@@ -34,13 +35,23 @@ export default function HomePage() {
 
       {/* SUBTEXT */}
       <p className="mt-5 text-lg text-indigo-100 max-w-2xl mx-auto leading-relaxed">
-        Access Previous Year Questions with Solutions,
-        Check Results Instantly, and Calculate CGPA --
-        all in one simple platform.
+        Access Previous Year Questions with Solutions, attempt MCQ tests in exam mode,
+        check results instantly, and calculate CGPA — all in one simple platform.
       </p>
 
       {/* PRIMARY ACTIONS */}
       <div className="mt-10 flex justify-center gap-4 flex-wrap">
+
+        <Link
+          href="/test"
+          className="px-8 py-3 rounded-xl bg-emerald-500 text-white
+                     font-semibold shadow-lg
+                     hover:scale-105 hover:bg-emerald-600 hover:shadow-xl
+                     transition duration-200 inline-flex items-center gap-2"
+        >
+          <ClipboardList className="w-5 h-5" />
+          Take MCQ Test
+        </Link>
 
         <Link
           href="/pyq/download"
@@ -117,8 +128,8 @@ export default function HomePage() {
           <p>Subjects</p>
         </div>
         <div>
-          <p className="text-xl font-bold text-white">Instant</p>
-          <p>Result Access</p>
+          <p className="text-xl font-bold text-white">CBT</p>
+          <p>MCQ Test Mode</p>
         </div>
         <div>
           <p className="text-xl font-bold text-white">Free</p>
@@ -130,6 +141,11 @@ export default function HomePage() {
   </div>
 </section>
 
+      {/* ================= MCQ TEST SPOTLIGHT ================= */}
+      <section className="container mx-auto px-6">
+        <McqTestPromoBanner />
+      </section>
+
 
 
       {/* ================= FEATURES ================= */}
@@ -138,18 +154,27 @@ export default function HomePage() {
           Core Features
         </h2>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <FeatureCard
+            title="MCQ Test Mode"
+            desc="Attempt objective papers in a timed CBT interface with instant scoring."
+            href="/test"
+            highlight
+          />
           <FeatureCard
             title="Previous Year Questions"
             desc="Structured subject → paper → question navigation with solutions."
+            href="/pyq/download"
           />
           <FeatureCard
-            title="Result Portal"
-            desc="Fetch official BEU results instantly."
+            title="Solution Viewer"
+            desc="Step-by-step solutions with markdown, images, and LaTeX support."
+            href="/pyq"
           />
           <FeatureCard
             title="CGPA Calculator"
             desc="Calculate SGPA & CGPA quickly and accurately."
+            href="/cgpa"
           />
         </div>
       </section>
@@ -161,13 +186,15 @@ export default function HomePage() {
             How AlphaResult Works
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
             <StepCard number="1" title="Login Once"
               desc="Your semester & branch are securely saved." />
-            <StepCard number="2" title="Navigate Smartly"
-              desc="Switch between Subjects → Papers → Questions easily." />
-            <StepCard number="3" title="Practice Efficiently"
-              desc="View solutions and download PDFs for revision." />
+            <StepCard number="2" title="Pick a Paper"
+              desc="Browse PYQs by subject and year, or open the MCQ test catalog." />
+            <StepCard number="3" title="Practice in CBT Mode"
+              desc="Take objective tests with timer, palette navigation, and review." />
+            <StepCard number="4" title="Track Progress"
+              desc="View solutions, download PDFs, and check your test results." />
           </div>
 
           <p className="mt-6 text-slate-600 text-sm">
@@ -185,6 +212,7 @@ export default function HomePage() {
         <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
           {[
+            "Timed MCQ tests with instant evaluation",
             "Clean and distraction-free interface",
             "Mobile-optimized smooth navigation",
             "Structured subject-wise organization",
@@ -241,13 +269,49 @@ export default function HomePage() {
 
 /* ================= COMPONENTS ================= */
 
-function FeatureCard({ title, desc }: any) {
-  return (
-    <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition">
-      <h3 className="font-semibold text-lg mb-2">{title}</h3>
-      <p className="text-slate-600 text-sm">{desc}</p>
+function FeatureCard({
+  title,
+  desc,
+  href,
+  highlight = false,
+}: {
+  title: string;
+  desc: string;
+  href?: string;
+  highlight?: boolean;
+}) {
+  const content = (
+    <div
+      className={`rounded-2xl shadow-md p-6 hover:shadow-lg transition h-full ${
+        highlight
+          ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200"
+          : "bg-white"
+      }`}
+    >
+      {highlight && (
+        <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded mb-2">
+          New
+        </span>
+      )}
+      <h3 className={`font-semibold text-lg mb-2 ${highlight ? "text-emerald-900" : ""}`}>
+        {title}
+      </h3>
+      <p className={`text-sm ${highlight ? "text-emerald-800/80" : "text-slate-600"}`}>
+        {desc}
+      </p>
+      {href && (
+        <p className={`mt-3 text-sm font-medium ${highlight ? "text-emerald-700" : "text-[#5B2EBD]"}`}>
+          Explore →
+        </p>
+      )}
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+
+  return content;
 }
 
 function StepCard({ number, title, desc }: any) {
@@ -268,6 +332,10 @@ function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
 
   const faqs = [
+    {
+      q: "What is MCQ Test Mode?",
+      a: "MCQ Test Mode lets you attempt objective questions from previous year papers in a competitive exam-style interface. It includes a timer, question palette, mark for review, and instant score after you submit. Browse available tests at /test or start directly from any PYQ paper that has objective questions."
+    },
     {
       q: "Do I need to login to access PYQs?",
       a: "Yes. Only logged-in users can access PYQs. Your semester and branch are automatically saved for faster navigation."

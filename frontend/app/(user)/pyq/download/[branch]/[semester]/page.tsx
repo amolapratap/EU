@@ -15,6 +15,7 @@ import { SEMESTERS } from "@/lib/constants/academic";
 import { BRANCHES } from "@/lib/constants/academic";
 
 import { getPosterPath } from "@/lib/posters";
+import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
 
 // import { PdfViewer } from "@/components/academic/PdfViewer"
 import dynamic from "next/dynamic";
@@ -308,6 +309,8 @@ function getPdfSourceType(url: string) {
           These papers help you understand exam patterns, important topics, and frequently asked questions.
         </p>
       </div>
+
+      <McqTestPromoBanner variant="strip" />
 
 
 <div className="flex justify-end mb-2">
