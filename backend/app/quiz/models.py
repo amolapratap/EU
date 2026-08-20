@@ -26,10 +26,35 @@ class QuestionResponse(BaseModel):
     question_md: str
     options: List[str]
 
+class QuizPaperResponse(BaseModel):
+    """Paper metadata needed to label the quiz experience."""
+    id: str
+    name: Optional[str] = None
+    subject_code: Optional[str] = None
+    year: Optional[int] = None
+    exam_type: Optional[str] = None
+    paper_type: Optional[str] = None
+    type: Optional[str] = None
+
 class QuizzesQuestionsResponse(BaseModel):
     """Standard dynamic structural stream matching Quiz Mode/Test requirements"""
     total_questions: int
     questions: List[QuestionResponse]
+    paper: QuizPaperResponse
+
+class QuizPaperListItem(BaseModel):
+    """A paper eligible to be started in objective test mode."""
+    paper_id: str
+    subject_code: str
+    name: Optional[str] = None
+    type: Optional[str] = None
+    paper_type: Optional[str] = None
+    year: Optional[int] = None
+    objective_questions: int
+
+class QuizPaperListResponse(BaseModel):
+    total_papers: int
+    papers: List[QuizPaperListItem]
 
 class AnswerDetail(BaseModel):
     """Post-Exam analysis layout blueprint"""
@@ -66,6 +91,7 @@ class QuizAttemptDetail(BaseModel):
     attempt_id: str
     subject_code: str
     subject_name: Optional[str] = None
+    year: Optional[int] = None
     score: int
     total: int
     percentage: float

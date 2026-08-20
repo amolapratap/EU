@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from bson import ObjectId
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+import re
 
 from app.database import db_instance
 from .models import QuizSubmissionRequest
@@ -11,7 +12,68 @@ class QuizController:
     """Handles mapping nested paper schemas into a single flat objective test string"""
 
     # =====================================================
-    # 1. FETCH QUIZ QUESTIONS (SAFE FLAT STREAM)
+    # 0. LIST PAPERS AVAILABLE FOR OBJECTIVE TEST MODE
+    # =====================================================
+    @staticmethod
+    async def get_test_papers(search: str = "", limit: int = 500) -> Dict[str, Any]:
+        """Return only papers containing at least one usable objective MCQ."""
+        query: Dict[str, Any] = {
+            "questions": {"$elemMatch": {"nature": "objective"}}
+        }
+
+        normalized_search = search.strip()
+        if normalized_search:
+            safe_search = re.escape(normalized_search)
+            query["$or"] = [
+                {"subject_code": {"$regex": safe_search, "$options": "i"}},
+                {"name": {"$regex": safe_search, "$options": "i"}},
+            ]
+
+        projection = {
+            "subject_code": 1,
+            "name": 1,
+            "type": 1,
+            "paper_type": 1,
+            "year": 1,
+            "questions.nature": 1,
+            "questions.sub_questions.options": 1,
+        }
+        papers = await db_instance.db.papers.find(query, projection).sort([
+            ("year", -1),
+            ("subject_code", 1),
+            ("created_at", -1),
+        ]).to_list(limit)
+
+        eligible_papers: List[Dict[str, Any]] = []
+        for paper in papers:
+            objective_questions = sum(
+                1
+                for question in paper.get("questions", [])
+                if question.get("nature") == "objective"
+                for sub_question in question.get("sub_questions", [])
+                if sub_question.get("options")
+            )
+
+            if objective_questions == 0:
+                continue
+
+            eligible_papers.append({
+                "paper_id": str(paper["_id"]),
+                "subject_code": paper.get("subject_code", ""),
+                "name": paper.get("name", ""),
+                "type": paper.get("type"),
+                "paper_type": paper.get("paper_type"),
+                "year": paper.get("year"),
+                "objective_questions": objective_questions,
+            })
+
+        return {
+            "total_papers": len(eligible_papers),
+            "papers": eligible_papers,
+        }
+
+    # =====================================================
+    # 1. FETCH ONE QUIZ QUESTIONS (SAFE FLAT STREAM)
     # =====================================================
     @staticmethod
     async def get_quiz_questions(paper_id: str) -> Dict[str, Any]:
@@ -56,7 +118,16 @@ class QuizController:
 
             return {
                 "total_questions": len(questions),
-                "questions": questions
+                "questions": questions,
+                "paper": {
+                    "id": str(paper["_id"]),
+                    "name": paper.get("name"),
+                    "subject_code": paper.get("subject_code"),
+                    "year": paper.get("year"),
+                    "exam_type": paper.get("exam_type"),
+                    "paper_type": paper.get("paper_type"),
+                    "type": paper.get("type"),
+                }
             }
 
         except HTTPException:
@@ -154,6 +225,7 @@ class QuizController:
                 "paper_id": paper_oid,
                 "subject_code": paper.get("subject_code", ""),
                 "subject_name": paper.get("name", ""),
+                "year": paper.get("year"),
                 "total_questions": total_questions,
                 "correct_answers": correct_count,
                 "score_percentage": round(percentage, 2),
@@ -218,6 +290,12 @@ class QuizController:
             "user_id": ObjectId(user_id)
         }).sort("submitted_at", -1).to_list(limit)
 
+        # Older attempts were saved before the year field was introduced.
+        # Resolve their paper years in one query so history remains complete.
+        paper_ids = list({attempt.get("paper_id") for attempt in attempts if attempt.get("paper_id")})
+        papers = await db_instance.db.papers.find({"_id": {"$in": paper_ids}}).to_list(None) if paper_ids else []
+        paper_years = {str(paper["_id"]): paper.get("year") for paper in papers}
+
         return {
             "total_attempts": len(attempts),
             "attempts": [
@@ -225,6 +303,7 @@ class QuizController:
                     "attempt_id": str(a["_id"]),
                     "subject_code": a.get("subject_code", ""),
                     "subject_name": a.get("subject_name", ""),
+                    "year": a.get("year", paper_years.get(str(a.get("paper_id")))),
                     "score": a.get("correct_answers", 0),
                     "total": a.get("total_questions", 0),
                     "percentage": a.get("score_percentage", 0),

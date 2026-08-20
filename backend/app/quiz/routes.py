@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.auth.utils import get_current_user
 
@@ -8,13 +8,22 @@ from .models import (
     QuizSubmissionRequest,
     QuizSubmissionResponse,
     QuizResultsResponse,
-    QuizHistoryResponse
+    QuizHistoryResponse,
+    QuizPaperListResponse
 )
 
 router = APIRouter()
 
 #  This forces Swagger UI to show a working lock icon and attach headers automatically
 security_scheme = HTTPBearer()
+
+# 0. LIST PAPERS AVAILABLE FOR OBJECTIVE TEST MODE
+@router.get("/papers", response_model=QuizPaperListResponse)
+async def get_test_papers(
+    search: str = Query(default="", max_length=100),
+    limit: int = Query(default=500, ge=1, le=500),
+):
+    return await QuizController.get_test_papers(search, limit)
 
 # 1. FETCH QUIZ QUESTIONS
 @router.get("/questions/{paper_id}", response_model=QuizzesQuestionsResponse)

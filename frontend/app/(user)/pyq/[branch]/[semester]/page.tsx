@@ -13,7 +13,7 @@ import {
 } from "@/components/pyq/mobile";
 import { useSwipeable } from "react-swipeable";
 import { useParams, useRouter } from 'next/navigation';
-import { Share2, Share, RefreshCw } from "lucide-react";
+import { Share2, Share, RefreshCw, ClipboardList } from "lucide-react";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -131,6 +131,12 @@ const handlers = useSwipeable({
       (item.sq?.sq_no ?? null) === (activeQ.sq?.sq_no ?? null)
     )
   : -1;
+
+  const hasObjectiveMcqs = paper?.questions?.some(
+    (q: any) =>
+      q.nature === "objective" &&
+      q.sub_questions?.some((sq: any) => sq.options?.length > 0)
+  );
 
 
   function goPrev() {
@@ -654,14 +660,30 @@ useEffect(() => {
 </div> */}
 
 
-{/* VIEW TOGGLE + DOWNLOAD */}
-<div className="flex items-center justify-between mb-4">
+{/* VIEW TOGGLE + TEST + DOWNLOAD */}
+<div className="flex flex-wrap items-center justify-between gap-3 mb-4">
 
-  {/* LEFT SPACER (keeps toggle centered) */}
-  <div className="w-24" />
+  {/* LEFT: MCQ Test (opens in new tab) */}
+  {hasObjectiveMcqs && paper?._id ? (
+    <a
+      href={`/test/${paper._id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Practice objective questions in exam mode"
+      className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium
+                 bg-gradient-to-r from-emerald-600 to-teal-600
+                 text-white shadow hover:opacity-90 transition shrink-0"
+    >
+      <ClipboardList size={16} />
+      <span className="hidden sm:inline">Take MCQ Test</span>
+      <span className="sm:hidden">MCQ Test</span>
+    </a>
+  ) : (
+    <div className="w-24 hidden sm:block shrink-0" />
+  )}
 
   {/* CENTER TOGGLE */}
-  <div className="flex bg-slate-100 rounded-lg p-1">
+  <div className="flex bg-slate-100 rounded-lg p-1 mx-auto sm:mx-0">
     <button
       onClick={() => setViewMode("solution")}
       className={`px-4 py-1.5 rounded-md text-sm font-medium transition
