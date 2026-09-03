@@ -101,6 +101,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   /* ---------------- STATIC ---------------- */
   const staticRoutes = [
     "",
+    "/blog",
     "/pyq",
     "/pyq/download",
     // "/result",

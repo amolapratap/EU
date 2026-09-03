@@ -23,6 +23,7 @@ type NavLink = {
 
 const USER_NAV: NavLink[] = [
   { href: "/", label: "Home" },
+  { href: "/blog", label: "News & Blog" },
   { href: "/pyq/download", label: "PYQs" },
   { href: "/pyq", label: "Solution" },
   // { href: "/result", label: "Result"},
@@ -35,6 +36,7 @@ const USER_NAV: NavLink[] = [
 
 const ADMIN_NAV: NavLink[] = [
   { href: "/admin", label: "Admin Dashboard" },
+  { href: "/admin/blog", label: "Blogs & News" },
   { href: "/admin/ssb", label: "Subject" },
   { href: "/admin/papers", label: "Paper" },
   { href: "/admin/missing-papers", label: "Missing Papers"},

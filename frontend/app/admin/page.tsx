@@ -137,6 +137,7 @@ export default function AdminDashboardPage() {
             <ActionCard title="Create Branch" url="ssb" />
             <ActionCard title="Create Subject" url="ssb" />
             <ActionCard title="Create Paper" url="papers" />
+            <ActionCard title="Blogs & News" url="blog" />
           </div>
         </section>
 

@@ -15,6 +15,8 @@ from app.user.routes import router as user_router
 from app.auth.google_routes import router as google_router
 from app.cron.routes import router as scheduler_router
 from app.quiz.routes import router as quiz_router
+from app.admin.blog.routes import router as admin_blog_router
+from app.public2.blog.routes import router as public_blog_router
 
 
 
@@ -74,7 +76,7 @@ async def shutdown_event():
 def root():
     return {"message": "EU Study Backend Running 🚀"}
 
-# All rotes api
+# All routes api
 app.include_router(public_router, prefix="/api/public", tags=["Public"])
 app.include_router(result_router, prefix="/api/public/result", tags=["Result"])
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
@@ -86,4 +88,8 @@ app.include_router(scheduler_router, prefix="/cron", tags=["Scheduler"])
 
 #  INCLUDE QUIZ ROUTER (NEW)
 app.include_router(quiz_router, prefix="/api/quiz", tags=["Quiz"])
+
+#  BLOG ROUTERS (ADMIN & PUBLIC)
+app.include_router(admin_blog_router, prefix="/admin/blog", tags=["Admin Blog"])
+app.include_router(public_blog_router, prefix="/api/public/blog", tags=["Public Blog"])
 
