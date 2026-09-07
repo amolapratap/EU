@@ -92,6 +92,7 @@ export default function Footer() {
             <li><Link href="/pyq" className="hover:text-white">Solution</Link></li>
             {/* <li><Link href="/result" className="hover:text-white">Result</Link></li> */}
             <li><Link href="/cgpa" className="hover:text-white">CGPA</Link></li>
+            <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
             <li><Link href="/about" className="hover:text-white">About</Link></li>
           </ul>
         </div>

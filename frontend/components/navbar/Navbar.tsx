@@ -355,6 +355,16 @@ links.map(link => (
     Missing Papers
   </Link>
 
+<Link href="/blog"
+  className="
+  font-medium
+  text-slate-700
+  hover:text-[#5B2EBD]
+  transition-colors duration-200
+">
+    Blog
+  </Link>
+
   <Link href="/about"
   className="
   font-medium
@@ -365,15 +375,7 @@ links.map(link => (
     About
   </Link>
 
-  <Link href="/blog"
-  className="
-  font-medium
-  text-slate-700
-  hover:text-[#5B2EBD]
-  transition-colors duration-200
-">
-    Blog
-  </Link>
+
 
   {/* <Link href="/help"
   className="
