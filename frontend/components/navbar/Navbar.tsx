@@ -29,9 +29,9 @@ const USER_NAV: NavLink[] = [
   // { href: "/result", label: "Result"},
   { href: "/cgpa", label: "CGPA" },
   { href: "/pyq/missing-papers", label: "Missing Papers"},
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
   // { href: "/help", label: "Help" },
-  { href: "/blog", label: "Blog" },
   { href: "/contact-us", label: "Contact-Us" },
 ];
 
