@@ -30,7 +30,8 @@ const USER_NAV: NavLink[] = [
   { href: "/cgpa", label: "CGPA" },
   { href: "/pyq/missing-papers", label: "Missing Papers"},
   { href: "/about", label: "About" },
-  { href: "/help", label: "Help" },
+  // { href: "/help", label: "Help" },
+  { href: "/blog", label: "Blog" },
   { href: "/contact-us", label: "Contact-Us" },
 ];
 
@@ -344,6 +345,16 @@ links.map(link => (
     setOpenMenu={setOpenMenu}
   />
 
+<Link href="/blog"
+  className="
+  font-medium
+  text-slate-700
+  hover:text-[#5B2EBD]
+  transition-colors duration-200
+">
+    Blog
+  </Link>
+
 <Link href="/pyq/missing-papers" 
   className="
   font-medium
@@ -364,7 +375,7 @@ links.map(link => (
     About
   </Link>
 
-  <Link href="/help"
+  {/* <Link href="/help"
   className="
   font-medium
   text-slate-700
@@ -372,7 +383,7 @@ links.map(link => (
   transition-colors duration-200
 ">
     Help
-  </Link>
+  </Link> */}
 
   <Link href="/contact-us" 
   className="
@@ -683,6 +694,14 @@ links.map(link => (
         </Link>
 
         <Link
+          href="/blog"
+          onClick={() => setOpen(false)}
+          className="block text-slate-700 hover:text-[#5B2EBD]"
+        >
+          Blog
+        </Link>
+
+        <Link
           href="/about"
           onClick={() => setOpen(false)}
           className="block text-slate-700 hover:text-[#5B2EBD]"
@@ -690,13 +709,13 @@ links.map(link => (
           About
         </Link>
 
-        <Link
+        {/* <Link
           href="/help"
           onClick={() => setOpen(false)}
           className="block text-slate-700 hover:text-[#5B2EBD]"
         >
           Help
-        </Link>
+        </Link> */}
 
         <Link
           href="/contact-us"
