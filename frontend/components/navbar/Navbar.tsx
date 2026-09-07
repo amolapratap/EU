@@ -23,7 +23,7 @@ type NavLink = {
 
 const USER_NAV: NavLink[] = [
   { href: "/", label: "Home" },
-  { href: "/blog", label: "News & Blog" },
+  // { href: "/blog", label: "News & Blog" },
   { href: "/pyq/download", label: "PYQs" },
   { href: "/pyq", label: "Solution" },
   // { href: "/result", label: "Result"},
@@ -345,16 +345,6 @@ links.map(link => (
     setOpenMenu={setOpenMenu}
   />
 
-<Link href="/blog"
-  className="
-  font-medium
-  text-slate-700
-  hover:text-[#5B2EBD]
-  transition-colors duration-200
-">
-    Blog
-  </Link>
-
 <Link href="/pyq/missing-papers" 
   className="
   font-medium
@@ -373,6 +363,16 @@ links.map(link => (
   transition-colors duration-200
 ">
     About
+  </Link>
+
+  <Link href="/blog"
+  className="
+  font-medium
+  text-slate-700
+  hover:text-[#5B2EBD]
+  transition-colors duration-200
+">
+    Blog
   </Link>
 
   {/* <Link href="/help"
