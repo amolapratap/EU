@@ -211,7 +211,7 @@ export default function AdminPapersPage() {
       <div className="flex gap-4 mb-6 flex-wrap">
         <Select label="Semester" value={semester} options={semesters} onChange={setSemester} />
         <Select label="Branch" value={branch} options={branches} onChange={setBranch} />
-        <Select label="Subject" value={subject} options={subjects} onChange={setSubject} />
+        <Select label="Subject" value={subject} options={subjects} onChange={setSubject} valKey="_id" />
 
         <button
           disabled={!subject}
@@ -400,7 +400,7 @@ const auth = () => ({
   headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
 });
 
-function Select({ label, value, options, onChange }: any) {
+function Select({ label, value, options, onChange, valKey = "code" }: any) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs text-slate-400">{label}</label>
@@ -410,13 +410,16 @@ function Select({ label, value, options, onChange }: any) {
         className="bg-[#0F1629] border border-white/10 px-4 py-2 rounded"
       >
         <option value="">Select</option>
-        {options.map((o: any) => (
-          <option key={o.code} value={o.code}>
-              {o.short_name
-              ? `${o.short_name}(${o.code})`
-              : o.code}
-          </option>
-        ))}
+        {options.map((o: any) => {
+          const optVal = valKey && o[valKey] ? o[valKey] : o.code;
+          return (
+            <option key={o._id || o.code} value={optVal}>
+                {o.short_name
+                ? `${o.short_name}(${o.code})`
+                : o.code}
+            </option>
+          );
+        })}
       </select>
     </div>
   );
@@ -465,7 +468,7 @@ function PaperModal({ subject, data, onClose, onSaved }: any) {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify({
-        subject_code: subject,
+        subject_id: subject,
         name,
         type,
         paper_type,

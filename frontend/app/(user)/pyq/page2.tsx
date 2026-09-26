@@ -179,7 +179,7 @@ const handlers = useSwipeable({
 useEffect(() => {
   if (!activeSubject) return;
 
-  apiGet(`/user/papers?subject_code=${activeSubject.code}`)
+  apiGet(`/user/papers?subject_id=${activeSubject._id}`)
     .then(json => {
       setPapers(json.data || []);
       if (json.data?.length) setActivePaper(json.data[0]);

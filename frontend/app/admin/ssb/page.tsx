@@ -779,10 +779,10 @@ function SubjectModal({ data, semesters, branches, onClose, onSaved }: any) {
 
     const method = data ? "PUT" : "POST";
     const url = data
-      ? `${API_URL}/admin/ssb/subject/${data.code}`
+      ? `${API_URL}/admin/ssb/subject/${data._id || data.code}`
       : `${API_URL}/admin/ssb/subject`;
 
-    await fetch(url, {
+    const res = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
@@ -801,6 +801,12 @@ function SubjectModal({ data, semesters, branches, onClose, onSaved }: any) {
       }),
     });
 
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Failed to save subject");
+      return;
+    }
+
     onSaved();
     onClose();
   }
@@ -813,7 +819,7 @@ function SubjectModal({ data, semesters, branches, onClose, onSaved }: any) {
       </h3>
 
       <input className="input mb-3" placeholder="Code"
-        value={code} disabled={!!data}
+        value={code}
         onChange={e => setCode(e.target.value)}
       />
 

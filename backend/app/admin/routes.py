@@ -65,22 +65,22 @@ async def get_subjects(
 ):
     return await list_subjects(semester, branch)
 
-@router.put("/ssb/subject/{code}")
-async def edit_subject(code: str, body: dict, admin = Depends(get_current_admin)):
-    return await update_subject(code, body, admin)
+@router.put("/ssb/subject/{identifier}")
+async def edit_subject(identifier: str, body: dict, admin = Depends(get_current_admin)):
+    return await update_subject(identifier, body, admin)
 
-@router.delete("/ssb/subject/{code}", dependencies=[Depends(admin_required)])
-async def remove_subject(code: str):
-    return await delete_subject(code)
+@router.delete("/ssb/subject/{identifier}", dependencies=[Depends(admin_required)])
+async def remove_subject(identifier: str):
+    return await delete_subject(identifier)
 
 @router.get("/ssb/subject/count", dependencies=[Depends(admin_required)])
 async def countsubject():
     return await count_subject()
 
     #------------SYLLABUS-----------------------
-@router.put("/ssb/subject/{code}/syllabus")
-async def syllabus(code: str, body: dict):
-    return await update_syllabus(code, body)
+@router.put("/ssb/subject/{identifier}/syllabus")
+async def syllabus(identifier: str, body: dict):
+    return await update_syllabus(identifier, body)
 
 
 #----------------PAPERS-------------------------------
@@ -94,10 +94,10 @@ async def add_paper(body: dict, admin = Depends(get_current_admin)):
     return await create_paper(body, admin)
 
 
-#  To get all papers of one subject
-@router.get("/papers/{subject_code}", dependencies=[Depends(admin_required)])
-async def get_papers(subject_code: str):
-    return await list_papers(subject_code)
+#  To get all papers of one subject by subject_id
+@router.get("/papers/{subject_id}", dependencies=[Depends(admin_required)])
+async def get_papers(subject_id: str):
+    return await list_papers(subject_id)
 
 
 #   To get one paper with all quetions of a subject
@@ -203,6 +203,9 @@ async def upload_pdf(
     if not paper:
         return {"success": False, "error": "Paper not found"}
 
+    # Use paper's historical subject_code for cloudinary folder hierarchy
+    subject_code = paper.get("subject_code") or subject
+
     #Branding
     file_bytes = await file.read()
     processed_pdf = await process_pdf_branding(file_bytes)
@@ -213,7 +216,7 @@ async def upload_pdf(
         processed_pdf,
         branch,
         sem,
-        subject,
+        subject_code,
         year,
         exam_type,
         admin
@@ -253,8 +256,10 @@ async def upload_pdf(
 # To merge all papers of a subject
 @router.post("/merge-subject-pdfs")
 async def merge_subject(body: dict, admin=Depends(get_current_admin)):
-    subject_code = body.get("subject_code")
-    result = await merge_subject_pdfs(subject_code, admin)
+    subject_identifier = body.get("subject_id") or body.get("subject_code")
+    if not subject_identifier:
+        raise HTTPException(status_code=400, detail="subject_id or subject_code is required")
+    result = await merge_subject_pdfs(subject_identifier, admin)
 
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])

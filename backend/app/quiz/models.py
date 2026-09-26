@@ -30,6 +30,7 @@ class QuizPaperResponse(BaseModel):
     """Paper metadata needed to label the quiz experience."""
     id: str
     name: Optional[str] = None
+    subject_id: Optional[str] = None
     subject_code: Optional[str] = None
     year: Optional[int] = None
     exam_type: Optional[str] = None
@@ -45,6 +46,7 @@ class QuizzesQuestionsResponse(BaseModel):
 class QuizPaperListItem(BaseModel):
     """A paper eligible to be started in objective test mode."""
     paper_id: str
+    subject_id: Optional[str] = None
     subject_code: str
     name: Optional[str] = None
     type: Optional[str] = None

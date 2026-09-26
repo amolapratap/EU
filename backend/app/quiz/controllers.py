@@ -30,6 +30,7 @@ class QuizController:
             ]
 
         projection = {
+            "subject_id": 1,
             "subject_code": 1,
             "name": 1,
             "type": 1,
@@ -59,6 +60,7 @@ class QuizController:
 
             eligible_papers.append({
                 "paper_id": str(paper["_id"]),
+                "subject_id": str(paper["subject_id"]) if paper.get("subject_id") else None,
                 "subject_code": paper.get("subject_code", ""),
                 "name": paper.get("name", ""),
                 "type": paper.get("type"),
@@ -122,6 +124,7 @@ class QuizController:
                 "paper": {
                     "id": str(paper["_id"]),
                     "name": paper.get("name"),
+                    "subject_id": str(paper["subject_id"]) if paper.get("subject_id") else None,
                     "subject_code": paper.get("subject_code"),
                     "year": paper.get("year"),
                     "exam_type": paper.get("exam_type"),

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from app.auth.dependencies import user_required
 from app.user.controllers import *
 from app.auth.utils import get_current_user
@@ -37,8 +38,11 @@ async def get_subjects(semester_code: int, branch_code: str):
 
 # @router.get("/papers", dependencies=[Depends(user_required)])
 @router.get("/papers")
-async def get_papers(subject_code: str):
-    return await list_papers(subject_code)
+async def get_papers(
+    subject_id: Optional[str] = Query(None),
+    subject_code: Optional[str] = Query(None)
+):
+    return await list_papers(subject_id=subject_id, subject_code=subject_code)
 
 
 # @router.get("/paper/{paper_id}", dependencies=[Depends(user_required)])

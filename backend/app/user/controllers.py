@@ -99,18 +99,37 @@ async def list_subjects(semester_code: int, branch_code: str):
 #         "data": [mongo_to_json(d) for d in docs],
 #     }
 
-async def list_papers(subject_code: str):
-    docs = await db_instance.db.papers.find(
-        {
-            "subject_code": subject_code,
-            "questions.0": {"$exists": True}  # ✅ at least 1 question
+async def list_papers(subject_id: str = None, subject_code: str = None):
+    query: dict = {"questions.0": {"$exists": True}}
+
+    raw_target = subject_id or subject_code
+    target = str(raw_target).strip() if raw_target else None
+
+    if not target:
+        return {
+            "success": False,
+            "message": "subject_id or subject_code is required",
+            "data": []
         }
-    ).sort("year", -1).to_list(None)
+
+    if ObjectId.is_valid(target):
+        # Direct lookup by subject_id (primary)
+        query["subject_id"] = ObjectId(target)
+    else:
+        # If code comes from frontend, find _id of subject first then find papers by subject_id
+        subject = await db_instance.db.subjects.find_one({"code": target})
+        if subject:
+            query["subject_id"] = subject["_id"]
+        else:
+            query["subject_code"] = target
+
+    docs = await db_instance.db.papers.find(query).sort("year", -1).to_list(None)
 
     return {
         "success": True,
         "data": mongo_to_json(docs)
     }
+
 
 
 # -------------------------------------------------

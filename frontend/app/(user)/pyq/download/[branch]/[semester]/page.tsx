@@ -76,7 +76,7 @@ export default function PyqDownloadPage() {
       setActivePaperIndex(-1); // ✅ RESET
     
       try {
-        const res = await apiGet(`/api/public/papers/${subject.code}`);
+        const res = await apiGet(`/api/public/papers/${subject._id || subject.code}`);
         setPapers(res.data || []);
       } catch {
         setPapers([]);

@@ -204,7 +204,7 @@ useEffect(() => {
   setPaper(null);
   setActiveQ(null);
 
-  apiGet(`/user/papers?subject_code=${activeSubject.code}`)
+  apiGet(`/user/papers?subject_id=${activeSubject._id}`)
   .then(json => {
     const sorted = (json.data || []).sort(
       (a: any, b: any) => b.year - a.year

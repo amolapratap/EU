@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Form, UploadFile, File, Query
 from typing import Optional
+from bson import ObjectId
 from app.public2.controllers import *
 from app.auth.utils import get_current_user_optional
 # from app.user.controllers import list_subjects          #it list all subjects which haven't credit also
@@ -47,15 +48,24 @@ async def calculate_sgpa(body : dict, current_user: Optional[dict] = Depends(get
     return await sgpa(body, current_user)
 
 
-# To get quest. papers pdf link all papers of one subject
-@router.get("/papers/{subject_code}")
-async def get_papers_by_subject(subject_code: str):
+# To get quest. papers pdf link all papers of one subject primarily by subject_id
+@router.get("/papers/{subject_id}")
+async def get_papers_by_subject(subject_id: str):
     """
-    Returns all paper PDF links for a subject
+    Returns all paper PDF links for a subject primarily by subject_id (with fallback for legacy code)
     """
+    query = {}
+    if ObjectId.is_valid(subject_id):
+        # Direct primary lookup by subject_id
+        query = {"subject_id": ObjectId(subject_id)}
+    else:
+        subject = await db_instance.db.subjects.find_one({"code": subject_id})
+        if subject:
+            query = {"subject_id": subject["_id"]}
+        else:
+            query = {"subject_code": subject_id}
 
-    # 🔹 Replace with your DB logic
-    papers = await db_instance.db.papers.find({"subject_code": subject_code}).sort("year", -1).to_list(length=200)
+    papers = await db_instance.db.papers.find(query).sort("year", -1).to_list(length=200)
 
     result = []
 

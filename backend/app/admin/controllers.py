@@ -201,7 +201,7 @@ async def list_subjects(semester=None, branch=None):
     subject =  await db_instance.db.subjects.find(query).sort("code", 1).to_list(200)
     return {"success": True, 'data': mongo_to_json(subject)}
 
-async def update_subject(code: str, body, admin):
+async def update_subject(identifier: str, body, admin):
 
     subject_type = body["subject_type"]
     max_marks = int(body["max_marks"])
@@ -231,20 +231,49 @@ async def update_subject(code: str, body, admin):
             detail="Practical subjects must have max_marks = 50 or 100"
         )
 
+    subject = None
+    if ObjectId.is_valid(identifier):
+        subject = await db_instance.db.subjects.find_one({"_id": ObjectId(identifier)})
+    if not subject:
+        subject = await db_instance.db.subjects.find_one({"code": identifier})
+
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    update_set = {
+        "short_name": body["short_name"],
+        "full_name": body["full_name"],
+        "semester_code": body["semester_code"],
+        "branch_code": branch_code,
+        "subject_type": subject_type,
+        "subject_credit": body["subject_credit"],
+        "max_marks": max_marks,
+        "all_paper_pdf": body.get("all_paper_pdf"),
+        "updated_at": utcnow()
+    }
+
+    # Allow admin to edit code of subject
+    new_code = body.get("code")
+    if new_code:
+        new_code = str(new_code).strip()
+        if new_code != subject.get("code"):
+            existing = await db_instance.db.subjects.find_one({
+                "code": new_code,
+                "_id": {"$ne": subject["_id"]}
+            })
+            if existing:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Subject with code '{new_code}' already exists"
+                )
+            update_set["code"] = new_code
+            # Note: Paper.subject_code is intentionally NOT cascaded.
+            # Paper.subject_code preserves the code at creation time for memory/historical reference.
+
     await db_instance.db.subjects.update_one(
-        {"code": code},
+        {"_id": subject["_id"]},
         {
-            "$set": {
-                "short_name": body["short_name"],
-                "full_name": body["full_name"],
-                "semester_code": body["semester_code"],
-                "branch_code": branch_code,
-                "subject_type": subject_type,
-                "subject_credit": body["subject_credit"],
-                "max_marks": max_marks,
-                "all_paper_pdf": body.get("all_paper_pdf"),
-                "updated_at": utcnow()
-            },
+            "$set": update_set,
             "$addToSet": {
                 "admin_userids": admin["admin_userid"]
             }
@@ -252,8 +281,11 @@ async def update_subject(code: str, body, admin):
     )
     return {"success": True}
 
-async def delete_subject(code: str):
-    await db_instance.db.subjects.delete_one({"code": code})
+async def delete_subject(identifier: str):
+    if ObjectId.is_valid(identifier):
+        await db_instance.db.subjects.delete_one({"_id": ObjectId(identifier)})
+    else:
+        await db_instance.db.subjects.delete_one({"code": identifier})
     return {"success": True}
 
 async def count_subject():
@@ -265,14 +297,20 @@ async def count_subject():
 
 
     #------------SYLLABUS-----------------------
-async def update_syllabus(code: str, body: dict):
+async def update_syllabus(identifier: str, body: dict):
 
     syllabus = body.get("syllabus", [])
 
-    await db_instance.db.subjects.update_one(
-        {"code": code},
-        {"$set": {"syllabus": syllabus}}
-    )
+    if ObjectId.is_valid(identifier):
+        await db_instance.db.subjects.update_one(
+            {"_id": ObjectId(identifier)},
+            {"$set": {"syllabus": syllabus}}
+        )
+    else:
+        await db_instance.db.subjects.update_one(
+            {"code": identifier},
+            {"$set": {"syllabus": syllabus}}
+        )
 
     return {
         "success": True,
@@ -292,9 +330,27 @@ from app.utils.mongo_serializer import mongo_to_json
 
 
 async def create_paper(body: dict, admin):
+    subject_id = body.get("subject_id")
+    subject_code = body.get("subject_code")
+
+    subject = None
+    if subject_id:
+        try:
+            subject = await db_instance.db.subjects.find_one({"_id": ObjectId(subject_id)})
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid subject_id")
+    elif subject_code:
+        subject = await db_instance.db.subjects.find_one({"code": subject_code})
+
+    if not subject:
+        raise HTTPException(
+            status_code=404,
+            detail="Subject not found for the provided subject_id or subject_code"
+        )
 
     doc = {
-        "subject_code": body["subject_code"],
+        "subject_id": subject["_id"],
+        "subject_code": subject.get("code", subject_code),
         "name": body["name"],
         "type": body["type"],          # exam_type => MID / END / QUIZ / PRACTICE
         "paper_type": body.get("paper_type"),
@@ -310,38 +366,34 @@ async def create_paper(body: dict, admin):
     res = await db_instance.db.papers.insert_one(doc)
     doc["_id"] = res.inserted_id
 
-    return {"success": True,
+    return {
+        "success": True,
         "data": mongo_to_json(doc)
     }
 
 
-async def list_papers(subject_code: str):
-    docs = await db_instance.db.papers.find(
-        {
-            "subject_code": subject_code
-        }
-    ).sort("year", -1).to_list(None)
+async def list_papers(subject_id: str):
+    """
+    List papers belonging to a subject, primarily by subject_id.
+    """
+    query = {}
+    if ObjectId.is_valid(subject_id):
+        # Direct lookup by subject_id (primary)
+        query = {"subject_id": ObjectId(subject_id)}
+    else:
+        # Fallback if an old subject_code string is passed
+        subject = await db_instance.db.subjects.find_one({"code": subject_id})
+        if subject:
+            query = {"subject_id": subject["_id"]}
+        else:
+            query = {"subject_code": subject_id}
+
+    docs = await db_instance.db.papers.find(query).sort("year", -1).to_list(None)
 
     return {
         "success": True,
         "data": mongo_to_json(docs)
     }
-
-
-# async def list_papers(subject_code: str):
-#     docs = await db_instance.db.papers.find(
-#         {
-#             "subject_code": subject_code,
-#             "questions.0": {"$exists": True}  # ✅ at least 1 question
-#         }
-#     ).sort("year", -1).to_list(None)
-
-#     return {
-#         "success": True,
-#         "data": mongo_to_json(docs)
-#     }
-
-
 
 
 async def get_paper_with_questions(paper_id: str):
@@ -355,20 +407,34 @@ async def get_paper_with_questions(paper_id: str):
     return {"success": True, "data": mongo_to_json(doc)}
 
 
-
 async def update_paper(paper_id: str, body: dict, admin):
+    update_data = {
+        "name": body["name"],
+        "type": body["type"],
+        "year": body["year"],
+        "description": body.get("description", ""),
+        "paper_pdf": body.get("paper_pdf", ""),
+        "updated_at": utcnow(),
+    }
+
+    # If subject_id is supplied, update the relationship to the new subject.
+    # Note: paper.subject_code is intentionally NOT modified (remains as historical snapshot).
+    if "subject_id" in body and body["subject_id"]:
+        try:
+            sub_oid = ObjectId(body["subject_id"])
+            subject = await db_instance.db.subjects.find_one({"_id": sub_oid})
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+            update_data["subject_id"] = subject["_id"]
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid subject_id")
 
     await db_instance.db.papers.update_one(
         {"_id": ObjectId(paper_id)},
         {
-            "$set": {
-                "name": body["name"],
-                "type": body["type"],
-                "year": body["year"],
-                "description": body.get("description", ""),
-                "paper_pdf": body.get("paper_pdf", ""),
-                "updated_at": utcnow(),
-            },
+            "$set": update_data,
             "$addToSet": {
                 "admin_userids": admin["admin_userid"]
             }
@@ -376,6 +442,7 @@ async def update_paper(paper_id: str, body: dict, admin):
     )
 
     return {"success": True, "message": "Paper updated successfully"}
+
 
 
 async def delete_paper(paper_id: str):
@@ -813,11 +880,30 @@ async def process_pdf_branding(file_bytes):
 # mere function to merge all papers of a subject
 
 import requests
-async def merge_subject_pdfs(subject_code: str, admin):
+async def merge_subject_pdfs(subject_identifier: str, admin):
+    # Lookup subject by ObjectId or code
+    subject = None
+    if ObjectId.is_valid(subject_identifier):
+        subject = await db_instance.db.subjects.find_one({"_id": ObjectId(subject_identifier)})
+    if not subject:
+        subject = await db_instance.db.subjects.find_one({"code": subject_identifier})
+
+    if not subject:
+        return {
+            "success": False,
+            "message": "Subject not found"
+        }
+
+    subject_code = subject["code"]
+    subject_id = subject["_id"]
+
     # 1. Fetch papers (only valid PDFs)
     papers = await db_instance.db.papers.find(
         {
-            "subject_code": subject_code,
+            "$or": [
+                {"subject_id": subject_id},
+                {"subject_code": subject_code}
+            ],
             "paper_pdf": {"$exists": True, "$ne": ""}
         }
     ).sort("year", -1).to_list(None)
@@ -875,7 +961,6 @@ async def merge_subject_pdfs(subject_code: str, admin):
     output.seek(0)
 
     # 4. Upload to Cloudinary
-    subject = await db_instance.db.subjects.find_one({"code": subject_code})
     branch = subject["branch_code"][0]
     sem = subject["semester_code"]
 
@@ -895,7 +980,7 @@ async def merge_subject_pdfs(subject_code: str, admin):
 
     # 5. Save URL in subject
     await db_instance.db.subjects.update_one(
-        {"code": subject_code},
+        {"_id": subject_id},
         {
             "$set": {
                 "all_paper_pdf": merged_url,
@@ -1113,16 +1198,22 @@ async def accept_public_upload_and_add_paper(paper_id, admin):
         except Exception as e:
             logger.warning(f"Temp delete failed: {str(e)}")
 
-    #find original actual paper(of subject) where finally url will be saved (unique paper => subject_code, year, exam_type, paper_type)
-    # if paper found then save url otherwise create paper instantly and save url
-
-    actual_paper = await db_instance.db.papers.find_one({
-        "subject_code": missing_paper["subject_code"],
+    # find original actual paper (by subject_id or subject_code, year, exam_type, paper_type)
+    subject = await db_instance.db.subjects.find_one({"code": missing_paper["subject_code"]})
+    paper_query = {
         "year": missing_paper["year"],
         "type": missing_paper["exam_type"],
         "paper_type": missing_paper["paper_type"]
-    })
+    }
+    if subject:
+        paper_query["$or"] = [
+            {"subject_id": subject["_id"]},
+            {"subject_code": missing_paper["subject_code"]}
+        ]
+    else:
+        paper_query["subject_code"] = missing_paper["subject_code"]
 
+    actual_paper = await db_instance.db.papers.find_one(paper_query)
 
     if not actual_paper:
         new_paper = {
@@ -1139,21 +1230,28 @@ async def accept_public_upload_and_add_paper(paper_id, admin):
             "created_at": utcnow(),
             "updated_at": utcnow(),
         }
+        if subject:
+            new_paper["subject_id"] = subject["_id"]
 
         insert_res = await db_instance.db.papers.insert_one(new_paper)
         paper_db_id = insert_res.inserted_id
 
     else:
         paper_db_id = actual_paper["_id"]
+        paper_update = {
+            "paper_pdf": final_url,
+            "paper_pdf_public_id": final_public_id,
+            "updated_at": utcnow(),
+        }
+        if "subject_id" not in actual_paper:
+            subject = await db_instance.db.subjects.find_one({"code": missing_paper["subject_code"]})
+            if subject:
+                paper_update["subject_id"] = subject["_id"]
 
         await db_instance.db.papers.update_one(
             {"_id": paper_db_id},
             {
-                "$set": {
-                    "paper_pdf": final_url,
-                    "paper_pdf_public_id": final_public_id,
-                    "updated_at": utcnow(),
-                },
+                "$set": paper_update,
                 "$addToSet": {
                     "admin_userids": admin["admin_userid"]
                 }
