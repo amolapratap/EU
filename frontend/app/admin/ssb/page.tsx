@@ -14,7 +14,7 @@ import ReactSelect from "react-select";
    TYPES
 ===================================================== */
 
-type TabType = "semester" | "branch" | "subject";
+type TabType = "semester" | "branch" | "subject" | "elective";
 
 interface Semester {
   code: string;
@@ -34,17 +34,34 @@ interface SyllabusUnit {
 }
 
 interface Subject {
+  _id?: string;
   code: string;
   short_name: string;
   full_name: string;
   semester_code: string;
-  branch_code: string;
+  branch_code: string | string[];
   subject_type: string;
   subject_credit: number;
   max_marks: number;
   all_paper_pdf: string;
 
   syllabus?: SyllabusUnit[]; // ✅ NEW
+}
+
+interface ElectiveChild {
+  subject_id: string;
+  short_name: string;
+  full_name: string;
+}
+
+interface ElectiveGroup {
+  _id: string;
+  code?: string | null;
+  short_name: string;
+  full_name: string;
+  semester_code: string;
+  branch_code: string | string[];
+  subjects: ElectiveChild[];
 }
 
 /* =====================================================
@@ -82,6 +99,7 @@ export default function AdminStructurePage() {
           {activeTab === "semester" && <SemesterSection />}
           {activeTab === "branch" && <BranchSection />}
           {activeTab === "subject" && <SubjectSection />}
+          {activeTab === "elective" && <ElectiveSection />}
         </div>
       </main>
     </div>
@@ -499,6 +517,575 @@ function SubjectSection() {
 }
 
 /* =====================================================
+   ELECTIVE SUBJECT GROUPS
+===================================================== */
+
+function ElectiveSection() {
+  const [electives, setElectives] = useState<ElectiveGroup[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
+  const [filterSem, setFilterSem] = useState("");
+  const [filterBranch, setFilterBranch] = useState("");
+
+  const [open, setOpen] = useState(false);
+  const [edit, setEdit] = useState<ElectiveGroup | null>(null);
+
+  useEffect(() => {
+    loadBase();
+  }, []);
+
+  async function loadBase() {
+    const [s, b] = await Promise.all([
+      fetch(`${API_URL}/admin/ssb/semester`, authHeader()).then(r => r.json()),
+      fetch(`${API_URL}/admin/ssb/branch`, authHeader()).then(r => r.json()),
+    ]);
+    setSemesters(Array.isArray(s.data) ? s.data : []);
+    setBranches(Array.isArray(b.data) ? b.data : []);
+    fetchElectives();
+  }
+
+  async function fetchElectives() {
+    const q = new URLSearchParams();
+    if (filterSem) q.append("semester", filterSem);
+    if (filterBranch) q.append("branch", filterBranch);
+
+    const res = await fetch(`${API_URL}/admin/ssb/electives?${q}`, authHeader());
+    const json = await res.json();
+    setElectives(Array.isArray(json.data) ? json.data : []);
+  }
+
+  useEffect(() => {
+    fetchElectives();
+  }, [filterSem, filterBranch]);
+
+  async function remove(id: string) {
+    if (!confirm("Delete this elective group? The subjects will NOT be deleted.")) return;
+
+    const backup = electives;
+    setElectives(electives.filter(e => e._id !== id));
+
+    try {
+      const res = await fetch(`${API_URL}/admin/ssb/electives/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Failed to delete elective group");
+        setElectives(backup);
+      }
+    } catch {
+      setElectives(backup);
+    }
+  }
+
+  return (
+    <SectionLayout title="Elective Subject Groups" onAdd={() => { setEdit(null); setOpen(true); }}>
+      <div className="flex gap-4 mb-4">
+        <Select value={filterSem} onChange={setFilterSem} options={semesters} />
+        <Select value={filterBranch} onChange={setFilterBranch} options={branches} />
+      </div>
+
+      <Table headers={["Code", "Short Name", "Full Name", "Semester", "Branch", "Subjects", "Actions"]}>
+        {electives.length === 0 ? (
+          <tr>
+            <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+              No elective subject groups found. Click &quot;Add&quot; to create one.
+            </td>
+          </tr>
+        ) : (
+          electives.map(eg => (
+            <tr key={eg._id}>
+              <Td>
+                {eg.code ? (
+                  <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700 font-medium">
+                    {eg.code}
+                  </span>
+                ) : (
+                  <span className="text-slate-500 text-xs">—</span>
+                )}
+              </Td>
+              <Td><span className="font-semibold text-white">{eg.short_name}</span></Td>
+              <Td>{eg.full_name}</Td>
+              <Td>{eg.semester_code}</Td>
+              <Td>
+                <div className="flex flex-wrap gap-1">
+                  {Array.isArray(eg.branch_code)
+                    ? eg.branch_code.map((b: string) => (
+                        <span key={b} className="px-2 py-0.5 text-xs rounded bg-slate-200 text-slate-700 font-medium">
+                          {b}
+                        </span>
+                      ))
+                    : (
+                      <span className="px-2 py-0.5 text-xs rounded bg-slate-200 text-slate-700 font-medium">
+                        {eg.branch_code}
+                      </span>
+                    )}
+                </div>
+              </Td>
+              <Td>
+                <div className="flex flex-wrap gap-1 max-w-xs">
+                  {eg.subjects && eg.subjects.length > 0 ? (
+                    eg.subjects.map(s => (
+                      <span
+                        key={s.subject_id}
+                        className="px-2 py-0.5 text-xs rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium"
+                        title={s.full_name}
+                      >
+                        {s.short_name}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-500">None</span>
+                  )}
+                </div>
+              </Td>
+              <Td>
+                <ActionBtn onClick={() => { setEdit(eg); setOpen(true); }}>Edit</ActionBtn>
+                <ActionBtn danger onClick={() => remove(eg._id)}>Delete</ActionBtn>
+              </Td>
+            </tr>
+          ))
+        )}
+      </Table>
+
+      {open && (
+        <ElectiveModal
+          data={edit}
+          semesters={semesters}
+          branches={branches}
+          onClose={() => setOpen(false)}
+          onSaved={fetchElectives}
+        />
+      )}
+    </SectionLayout>
+  );
+}
+
+function ElectiveModal({ data, semesters, branches, onClose, onSaved }: any) {
+  const [semester, setSemester] = useState(data?.semester_code || "");
+  const [branchCodes, setBranchCodes] = useState<string[]>(
+    Array.isArray(data?.branch_code) ? data.branch_code : data?.branch_code ? [data.branch_code] : []
+  );
+  const [shortName, setShortName] = useState(data?.short_name || "");
+  const [fullName, setFullName] = useState(data?.full_name || "");
+  const [code, setCode] = useState(data?.code || "");
+  const [subjects, setSubjects] = useState<ElectiveChild[]>(data?.subjects ? [...data.subjects] : []);
+
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const branchOptions = branches.map((b: any) => ({
+    value: b.code,
+    label: `${b.code} – ${b.short_name}`,
+  }));
+
+  // Dark-theme styles for ReactSelect
+  const customSelectStyles = {
+    control: (base: any, state: any) => ({
+      ...base,
+      backgroundColor: "#0B0F1A",
+      borderColor: state.isFocused ? "#6366F1" : "rgba(255, 255, 255, 0.12)",
+      boxShadow: state.isFocused ? "0 0 0 1px #6366F1" : "none",
+      "&:hover": {
+        borderColor: state.isFocused ? "#6366F1" : "rgba(255, 255, 255, 0.25)",
+      },
+      borderRadius: "0.5rem",
+      minHeight: "40px",
+      color: "#fff",
+    }),
+    menu: (base: any) => ({
+      ...base,
+      backgroundColor: "#0F1629",
+      border: "1px solid rgba(255, 255, 255, 0.15)",
+      borderRadius: "0.5rem",
+      zIndex: 9999,
+    }),
+    option: (base: any, state: any) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#4F46E5"
+        : state.isFocused
+        ? "#1E293B"
+        : "transparent",
+      color: "#fff",
+      fontSize: "0.875rem",
+      cursor: "pointer",
+    }),
+    multiValue: (base: any) => ({
+      ...base,
+      backgroundColor: "rgba(99, 102, 241, 0.2)",
+      border: "1px solid rgba(99, 102, 241, 0.4)",
+      borderRadius: "0.375rem",
+    }),
+    multiValueLabel: (base: any) => ({
+      ...base,
+      color: "#C7D2FE",
+      fontSize: "0.75rem",
+      fontWeight: 500,
+    }),
+    multiValueRemove: (base: any) => ({
+      ...base,
+      color: "#C7D2FE",
+      ":hover": {
+        backgroundColor: "rgba(239, 68, 68, 0.3)",
+        color: "#FCA5A5",
+      },
+    }),
+    input: (base: any) => ({
+      ...base,
+      color: "#fff",
+    }),
+    placeholder: (base: any) => ({
+      ...base,
+      color: "#64748B",
+      fontSize: "0.875rem",
+    }),
+    singleValue: (base: any) => ({
+      ...base,
+      color: "#fff",
+    }),
+  };
+
+  // Fetch subjects for this semester when semester changes
+  useEffect(() => {
+    if (!semester) {
+      setAvailableSubjects([]);
+      return;
+    }
+    async function loadSubjects() {
+      setLoadingSubjects(true);
+      try {
+        const res = await fetch(`${API_URL}/admin/ssb/subject?semester=${semester}`, authHeader());
+        const json = await res.json();
+        setAvailableSubjects(Array.isArray(json.data) ? json.data : []);
+      } catch {
+        setAvailableSubjects([]);
+      } finally {
+        setLoadingSubjects(false);
+      }
+    }
+    loadSubjects();
+  }, [semester]);
+
+  // Filter available subjects: exclude subjects already added to this group
+  const selectableSubjects = availableSubjects.filter(
+    as => !subjects.some(s => s.subject_id === as._id)
+  );
+
+  function handleAddSubject() {
+    if (!selectedSubjectId) return;
+    const subj = availableSubjects.find(s => s._id === selectedSubjectId);
+    if (!subj || !subj._id) return;
+
+    setSubjects(prev => [
+      ...prev,
+      {
+        subject_id: subj._id as string,
+        short_name: subj.short_name,
+        full_name: subj.full_name
+      }
+    ]);
+    setSelectedSubjectId("");
+  }
+
+  function handleRemoveSubject(subjectId: string) {
+    setSubjects(prev => prev.filter(s => s.subject_id !== subjectId));
+  }
+
+  async function submit() {
+    if (!shortName.trim()) {
+      alert("Short Name is required (e.g. PE-I or OE-I)");
+      return;
+    }
+    if (!fullName.trim()) {
+      alert("Full Name is required (e.g. Program Elective-I)");
+      return;
+    }
+    if (!semester) {
+      alert("Please select a semester");
+      return;
+    }
+    if (branchCodes.length === 0) {
+      alert("Please select at least one branch");
+      return;
+    }
+    if (subjects.length === 0) {
+      alert("Please add at least one subject to this elective group");
+      return;
+    }
+
+    setSaving(true);
+    const method = data ? "PUT" : "POST";
+    const url = data
+      ? `${API_URL}/admin/ssb/electives/${data._id}`
+      : `${API_URL}/admin/ssb/electives`;
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          semester_code: semester,
+          branch_code: branchCodes,
+          code: code.trim() || null,
+          short_name: shortName.trim(),
+          full_name: fullName.trim(),
+          subjects: subjects.map(s => ({
+            subject_id: s.subject_id,
+            short_name: s.short_name,
+            full_name: s.full_name
+          }))
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Failed to save elective group");
+        return;
+      }
+
+      onSaved();
+      onClose();
+    } catch (e: any) {
+      alert(`Error saving elective group: ${e.message}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal onClose={onClose} width="w-[620px]" hideClose={true}>
+      <div className="max-h-[85vh] overflow-y-auto pr-1">
+        {/* MODAL HEADER */}
+        <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white leading-tight">
+                {data ? "Edit Elective Group" : "Add Elective Group"}
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Group subjects into an elective choice (e.g. Program Elective)
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* BASIC DETAILS */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Short Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                className="input w-full bg-[#0B0F1A] border-white/10 focus:border-indigo-500 text-sm"
+                placeholder="e.g. PE-I or OE-I"
+                value={shortName}
+                onChange={e => setShortName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Code <span className="text-slate-400 font-normal">(Optional: e.g. 1056XX)</span>
+              </label>
+              <input
+                className="input w-full bg-[#0B0F1A] border-white/10 focus:border-indigo-500 text-sm font-mono"
+                placeholder="1056XX"
+                value={code}
+                onChange={e => setCode(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              Full Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              className="input w-full bg-[#0B0F1A] border-white/10 focus:border-indigo-500 text-sm"
+              placeholder="e.g. Program Elective-I"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Semester <span className="text-red-400">*</span>
+              </label>
+              <select
+                className="input w-full bg-[#0B0F1A] border-white/10 focus:border-indigo-500 text-sm"
+                value={semester}
+                onChange={e => setSemester(e.target.value)}
+              >
+                <option value="">Select Semester</option>
+                {semesters.map((s: any) => (
+                  <option key={s.code} value={s.code}>
+                    Semester {s.code}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Branch(es) <span className="text-red-400">*</span>
+              </label>
+              <ReactSelect
+                isMulti
+                styles={customSelectStyles}
+                options={branchOptions}
+                value={branchOptions.filter((opt: any) => branchCodes.includes(opt.value))}
+                onChange={(selected: any) =>
+                  setBranchCodes(selected ? selected.map((s: any) => s.value) : [])
+                }
+                placeholder="Select branch(es)..."
+                classNamePrefix="react-select"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SUBJECTS MANAGEMENT */}
+        <div className="mt-6 pt-5 border-t border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <label className="text-sm font-semibold text-white flex items-center gap-2">
+                <span>Subjects</span>
+                <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {subjects.length} added
+                </span>
+              </label>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Add the subjects that students can select from in this elective group.
+              </p>
+            </div>
+          </div>
+
+          {/* ADD SUBJECT CONTROLS */}
+          <div className="flex gap-2 mb-3">
+            <select
+              className="input flex-1 bg-[#0B0F1A] border-white/10 focus:border-indigo-500 text-sm py-2 px-3 rounded-lg text-slate-200"
+              value={selectedSubjectId}
+              onChange={e => setSelectedSubjectId(e.target.value)}
+              disabled={!semester || loadingSubjects}
+            >
+              <option value="">
+                {!semester
+                  ? "← Select a semester first to choose subjects"
+                  : loadingSubjects
+                  ? "Loading semester subjects..."
+                  : selectableSubjects.length === 0
+                  ? "All subjects for this semester already added"
+                  : "-- Choose Subject to Add --"}
+              </option>
+              {selectableSubjects.map((s: any) => (
+                <option key={s._id} value={s._id}>
+                  {s.short_name} ({s.code}) – {s.full_name}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={handleAddSubject}
+              disabled={!selectedSubjectId}
+              className="btn-primary text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-sm"
+            >
+              <span className="text-base leading-none font-bold">+</span> Add Subject
+            </button>
+          </div>
+
+          {/* LIST OF CURRENT SUBJECTS */}
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {subjects.length === 0 ? (
+              <div className="py-7 border-2 border-dashed border-white/10 rounded-lg text-center bg-[#0B0F1A]/40">
+                <p className="text-xs text-slate-400 font-medium">No subjects added yet.</p>
+                <p className="text-[11px] text-slate-500 mt-1">Select a subject from the dropdown above and click &quot;+ Add Subject&quot;.</p>
+              </div>
+            ) : (
+              subjects.map((s, idx) => (
+                <div
+                  key={s.subject_id}
+                  className="flex items-center justify-between bg-[#0B0F1A] hover:bg-[#131B31] px-3.5 py-2.5 rounded-lg border border-white/5 transition-all group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-6 h-6 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-mono font-semibold flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white text-sm">
+                          {s.short_name}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-400 truncate">
+                        {s.full_name}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSubject(s.subject_id)}
+                    className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 px-2.5 py-1 rounded text-xs font-medium transition-colors shrink-0 ml-3"
+                    title="Remove from elective group"
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* MODAL FOOTER */}
+        <div className="flex items-center justify-end gap-3 pt-4 mt-6 border-t border-white/10">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={saving}
+            className="btn-primary text-sm px-6 py-2 rounded-lg font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+          >
+            {saving ? "Saving..." : data ? "Update Elective Group" : "Create Elective Group"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* =====================================================
    HELPERS / UI
 ===================================================== */
 
@@ -526,7 +1113,7 @@ const Header = () => (
 function Tabs({ active, setActive }: any) {
   return (
     <div className="flex gap-3">
-      {["semester", "branch", "subject"].map(t => (
+      {["semester", "branch", "subject", "elective"].map(t => (
         <button
           key={t}
           onClick={() => setActive(t)}
@@ -536,7 +1123,7 @@ function Tabs({ active, setActive }: any) {
               : "border border-white/10 text-slate-400"
           }`}
         >
-          {t.toUpperCase()}
+          {t === "elective" ? "ELECTIVES" : t.toUpperCase()}
         </button>
       ))}
     </div>
@@ -598,19 +1185,21 @@ const Select = ({ options, value, onChange }: any) => (
 // SemesterModal, BranchModal, SubjectModal
 // 👉 For brevity, they follow same pattern:
 
-function Modal({ children, onClose }: any) {
+function Modal({ children, onClose, width = "w-[420px]", hideClose = false }: any) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-[#0F1629] w-[420px] rounded-xl border border-white/10 p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className={`bg-[#0F1629] ${width} max-w-full rounded-xl border border-white/10 p-6 shadow-2xl relative`}>
         {children}
-        <div className="text-right mt-4">
-          <button
-            onClick={onClose}
-            className="text-sm text-slate-400 hover:text-white"
-          >
-            Close
-          </button>
-        </div>
+        {!hideClose && (
+          <div className="text-right mt-4">
+            <button
+              onClick={onClose}
+              className="text-sm text-slate-400 hover:text-white"
+            >
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

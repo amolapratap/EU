@@ -270,22 +270,45 @@ async def update_subject(identifier: str, body, admin):
             # Note: Paper.subject_code is intentionally NOT cascaded.
             # Paper.subject_code preserves the code at creation time for memory/historical reference.
 
+    existing_admins = subject.get("admin_userids")
+    if isinstance(existing_admins, list):
+        if admin.get("admin_userid") and admin["admin_userid"] not in existing_admins:
+            existing_admins.append(admin["admin_userid"])
+        update_set["admin_userids"] = existing_admins
+    elif isinstance(existing_admins, str):
+        admin_list = [existing_admins]
+        if admin.get("admin_userid") and admin["admin_userid"] not in admin_list:
+            admin_list.append(admin["admin_userid"])
+        update_set["admin_userids"] = admin_list
+    else:
+        update_set["admin_userids"] = [admin["admin_userid"]] if admin.get("admin_userid") else []
+
     await db_instance.db.subjects.update_one(
         {"_id": subject["_id"]},
-        {
-            "$set": update_set,
-            "$addToSet": {
-                "admin_userids": admin["admin_userid"]
-            }
-        }
+        {"$set": update_set}
     )
+
+    # Keep child subjects in elective groups synchronized if short_name or full_name changed
+    from app.electives.controllers import sync_subject_in_electives
+    await sync_subject_in_electives(
+        subject_id=subject["_id"],
+        short_name=update_set.get("short_name"),
+        full_name=update_set.get("full_name")
+    )
+
     return {"success": True}
 
 async def delete_subject(identifier: str):
+    from app.electives.controllers import remove_subject_from_electives
+    subject = None
     if ObjectId.is_valid(identifier):
-        await db_instance.db.subjects.delete_one({"_id": ObjectId(identifier)})
+        subject = await db_instance.db.subjects.find_one({"_id": ObjectId(identifier)})
     else:
-        await db_instance.db.subjects.delete_one({"code": identifier})
+        subject = await db_instance.db.subjects.find_one({"code": identifier})
+
+    if subject:
+        await remove_subject_from_electives(subject["_id"])
+        await db_instance.db.subjects.delete_one({"_id": subject["_id"]})
     return {"success": True}
 
 async def count_subject():

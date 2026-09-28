@@ -83,6 +83,37 @@ async def syllabus(identifier: str, body: dict):
     return await update_syllabus(identifier, body)
 
 
+    #------------ELECTIVES-----------------------
+from app.electives.controllers import (
+    admin_list_electives,
+    admin_get_elective,
+    admin_create_elective,
+    admin_update_elective,
+    admin_delete_elective
+)
+
+@router.get("/ssb/electives", dependencies=[Depends(admin_required)])
+async def get_electives(semester: str | None = None, branch: str | None = None):
+    return await admin_list_electives(semester, branch)
+
+@router.get("/ssb/electives/{elective_id}", dependencies=[Depends(admin_required)])
+async def get_elective(elective_id: str):
+    return await admin_get_elective(elective_id)
+
+@router.post("/ssb/electives")
+async def add_elective(body: dict, admin = Depends(get_current_admin)):
+    return await admin_create_elective(body, admin)
+
+@router.put("/ssb/electives/{elective_id}")
+async def edit_elective(elective_id: str, body: dict, admin = Depends(get_current_admin)):
+    return await admin_update_elective(elective_id, body, admin)
+
+@router.delete("/ssb/electives/{elective_id}", dependencies=[Depends(admin_required)])
+async def remove_elective(elective_id: str):
+    return await admin_delete_elective(elective_id)
+
+
+
 #----------------PAPERS-------------------------------
 
 # router = APIRouter()

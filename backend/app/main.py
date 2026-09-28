@@ -17,6 +17,8 @@ from app.cron.routes import router as scheduler_router
 from app.quiz.routes import router as quiz_router
 from app.admin.blog.routes import router as admin_blog_router
 from app.public2.blog.routes import router as public_blog_router
+from app.electives.routes import router as v2_router
+from app.electives.controllers import ensure_elective_indexes
 
 
 
@@ -61,6 +63,7 @@ scheduler.add_job(
 @app.on_event("startup")
 async def startup_event():
     await connect_to_mongo()
+    await ensure_elective_indexes()
     scheduler.start()
     print("Scheduler started")
 
@@ -92,4 +95,10 @@ app.include_router(quiz_router, prefix="/api/quiz", tags=["Quiz"])
 #  BLOG ROUTERS (ADMIN & PUBLIC)
 app.include_router(admin_blog_router, prefix="/admin/blog", tags=["Admin Blog"])
 app.include_router(public_blog_router, prefix="/api/public/blog", tags=["Public Blog"])
+
+#  V2 ROUTER (NEW ELECTIVE-AWARE SUBJECTS)
+app.include_router(v2_router, prefix="/api/v2", tags=["V2"])
+app.include_router(v2_router, prefix="/api/public/v2", tags=["V2 Public"])
+app.include_router(v2_router, prefix="/user/v2", tags=["V2 User"])
+
 
