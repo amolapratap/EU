@@ -34,9 +34,44 @@ export default function PyqDownloadPage() {
   const [semester, setSemester] = useState("");
   const [branch, setBranch] = useState("");
 
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [AllSubjects, setAllSubjects] = useState<any[]>([])
+  const [regularSubjects, setRegularSubjects] = useState<any[]>([]);
+  const [allRegularSubjects, setAllRegularSubjects] = useState<any[]>([]);
+  const [electiveGroups, setElectiveGroups] = useState<any[]>([]);
+  const [selectedElectives, setSelectedElectives] = useState<Record<string, string>>({});
   const [loadingSubjects, setLoadingSubjects] = useState(false);
+
+  // Derived subjects: regular theory subjects + selected subject of each elective group
+  const subjects = [
+    ...regularSubjects,
+    ...electiveGroups
+      .map(eg => {
+        const groupKey = eg.short_name || eg._id;
+        const chosenCode = selectedElectives[groupKey] || eg.subjects?.[0]?.code;
+        const chosenChild = eg.subjects?.find((c: any) => c.code === chosenCode) || eg.subjects?.[0];
+        if (!chosenChild) return null;
+        return {
+          ...chosenChild,
+          is_elective: true,
+          elective_group: eg,
+        };
+      })
+      .filter(Boolean),
+  ];
+
+  // Derived AllSubjects for Credits Table: all regular subjects + elective groups (e.g. PE-I, PE-II)
+  const AllSubjects = [
+    ...allRegularSubjects,
+    ...electiveGroups.map(eg => ({
+      code: eg.code || eg.short_name,
+      short_name: eg.short_name,
+      full_name: eg.full_name || eg.name || "Program Elective",
+      subject_credit: eg.subject_credit || 3,
+      subject_type: eg.subject_type || "Theory",
+      max_marks: eg.max_marks || 100,
+      is_elective: true,
+      elective_group: eg,
+    })),
+  ];
 
   const [openSyllabus, setOpenSyllabus] = useState<string | null>(null);
   const [syllabusMap, setSyllabusMap] = useState<any>({});
@@ -104,6 +139,42 @@ export default function PyqDownloadPage() {
       }
     };
 
+    const handleSelectElectiveSubject = (eg: any, child: any) => {
+      const groupKey = eg.short_name || eg._id;
+      setSelectedElectives(prev => {
+        const next = { ...prev, [groupKey]: child.code };
+        if (typeof window !== "undefined") {
+          const storageKey = `selected_elective_${branch}_${semester}_${groupKey}`;
+          localStorage.setItem(storageKey, child.code);
+        }
+        return next;
+      });
+
+      // If papers of another subject in this elective group were open, switch to the new one
+      const isCurrentInGroup = eg.subjects?.some((c: any) => c.code === activeSubjectCode);
+      if (isCurrentInGroup && activeSubjectCode !== child.code) {
+        handleViewPapers(child);
+      }
+
+      // If syllabus of another subject in this elective group was open, switch to the new one
+      const isSyllabusInGroup = eg.subjects?.some((c: any) => c.code === openSyllabus);
+      if (isSyllabusInGroup && openSyllabus !== child.code) {
+        loadSyllabus(child.code);
+      }
+    };
+
+    const handleScrollToSubject = (s: any) => {
+      const eg = s.elective_group;
+      const targetEl =
+        (eg?.short_name && document.getElementById(`subject-${eg.short_name}`)) ||
+        (s.short_name && document.getElementById(`subject-${s.short_name}`)) ||
+        (eg?.code && document.getElementById(`subject-${eg.code}`)) ||
+        (s.code && document.getElementById(`subject-${s.code}`));
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+
 
   // Download paper
   // const getDownloadLink = (url: string) => {
@@ -166,20 +237,46 @@ export default function PyqDownloadPage() {
 
     setLoadingSubjects(true);
 
-    apiGet(
-      `/api/public/subjects?semester_code=${semester}&branch_code=${branch}`
-    )
+    apiGet(`/api/v2/subjects?semester_code=${semester}&branch_code=${branch}`)
       .then(res => {
-        const theoryOnly = (res.data || []).filter(
-          (s: any) => s.subject_type === "Theory"
-        );
-        setSubjects(theoryOnly);
-        setAllSubjects(res.data)
-        handleViewPapers(theoryOnly[0])
-        
-        // setLoadingPapers(false);
+        const allReg = res.data?.regular_subjects || res.regular_subjects || [];
+        const theoryReg = allReg.filter((s: any) => s.subject_type === "Theory");
+        const electives = res.data?.electives || res.electives || [];
+
+        setAllRegularSubjects(allReg);
+        setRegularSubjects(theoryReg);
+        setElectiveGroups(electives);
+
+        // Load stored elective selections from localStorage
+        const initialSelections: Record<string, string> = {};
+        electives.forEach((eg: any) => {
+          const groupKey = eg.short_name || eg._id;
+          const storageKey = `selected_elective_${branch}_${semester}_${groupKey}`;
+          const savedCode = typeof window !== "undefined" ? localStorage.getItem(storageKey) : null;
+          const matched = eg.subjects?.find((c: any) => c.code === savedCode);
+          if (matched) {
+            initialSelections[groupKey] = matched.code;
+          } else if (eg.subjects && eg.subjects.length > 0) {
+            initialSelections[groupKey] = eg.subjects[0].code;
+          }
+        });
+        setSelectedElectives(initialSelections);
       })
-      .catch(() => setSubjects([]))
+      .catch(() => {
+        // Fallback to legacy endpoint if v2 is unavailable
+        apiGet(`/api/public/subjects?semester_code=${semester}&branch_code=${branch}`)
+          .then(res => {
+            const theoryOnly = (res.data || []).filter((s: any) => s.subject_type === "Theory");
+            setAllRegularSubjects(res.data || []);
+            setRegularSubjects(theoryOnly);
+            setElectiveGroups([]);
+          })
+          .catch(() => {
+            setAllRegularSubjects([]);
+            setRegularSubjects([]);
+            setElectiveGroups([]);
+          });
+      })
       .finally(() => setLoadingSubjects(false));
   }, [semester, branch]);
 
@@ -459,55 +556,63 @@ function getPdfSourceType(url: string) {
 <div className="mt-12 rounded-2xl bg-gradient-to-br from-[#0a1f44] via-[#0d2b63] to-[#081633] p-5 shadow-xl text-white">
 
   {/* HEADER */}
-  <h2 className="text-lg font-semibold text-cyan-400 mb-5 text-center tracking-wide">
-    Credits Table
-  </h2>
-
-
-
-  <div className="grid grid-cols-12 items-center py-2 border-b border-white/50 text-[11px] uppercase tracking-wide text-blue-200/70">
-
-  <div className="col-span-2 font-semibold">
-    Code
+  <div className="mb-5 text-center">
+    <h2 className="text-lg font-semibold text-cyan-400 tracking-wide">
+      Credits Table
+    </h2>
+    <p className="text-[11px] text-blue-200/60 mt-0.5">
+      Click on any subject to jump directly to its question papers below
+    </p>
   </div>
 
-  <div className="col-span-6">
-    <div className="font-semibold">Name</div>
-    <div className="text-[10px] text-blue-300/50">
-      Full Name
+  <div className="grid grid-cols-12 items-center py-2 border-b border-white/50 text-[11px] uppercase tracking-wide text-blue-200/70">
+    <div className="col-span-2 font-semibold">
+      Code
+    </div>
+    <div className="col-span-6">
+      <div className="font-semibold">Name</div>
+      <div className="text-[10px] text-blue-300/50">
+        Full Name
+      </div>
+    </div>
+    <div className="col-span-2 text-center font-semibold">
+      Credit
+    </div>
+    <div className="col-span-2 text-center font-semibold">
+      Total Marks
     </div>
   </div>
 
-  <div className="col-span-2 text-center font-semibold">
-    Credit
-  </div>
-
-  <div className="col-span-2 text-center font-semibold">
-    Total Marks
-  </div>
-
-</div>
-
-
-
   {/* THEORY */}
-  <div >
+  <div>
     {AllSubjects.filter(s => s.subject_type === "Theory").map((s) => (
       <div
-        key={s.code}
-        className="grid grid-cols-12 items-center py-3 border-b border-white/5 hover:bg-white/5 transition"
+        key={s.is_elective ? `elective-${s.short_name || s.code}` : s.code}
+        onClick={() => handleScrollToSubject(s)}
+        className="grid grid-cols-12 items-center py-3 border-b border-white/5 hover:bg-white/10 cursor-pointer transition rounded-lg px-2 -mx-2 group"
+        title={`Click to jump to ${s.short_name} below`}
       >
         <div className="col-span-2 text-[11px] text-blue-300 font-medium">
           {s.code}
         </div>
 
-        <div className="col-span-6">
-          <div className="text-sm text-white font-medium leading-tight">
-            {s.short_name}
+        <div className="col-span-6 flex items-center justify-between pr-2">
+          <div>
+            <div className="text-sm text-white font-medium leading-tight group-hover:text-cyan-300 transition flex items-center gap-1.5">
+              <span>{s.short_name}</span>
+              {s.is_elective && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/30 text-indigo-300 font-normal border border-indigo-500/40">
+                  Elective
+                </span>
+              )}
+            </div>
+            <div className="text-[11px] text-blue-200/70 truncate">
+              {s.full_name}
+            </div>
           </div>
-          <div className="text-[11px] text-blue-200/70 truncate">
-            {s.full_name}
-          </div>
+          <span className="text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition hidden sm:inline">
+            ↓
+          </span>
         </div>
 
         <div className="col-span-2 text-center">
@@ -529,20 +634,27 @@ function getPdfSourceType(url: string) {
   <div>
     {AllSubjects.filter(s => s.subject_type === "Practical").map((s) => (
       <div
-        key={s.code}
-        className="grid grid-cols-12 items-center py-3 border-b border-white/5 hover:bg-white/5 transition"
+        key={s.is_elective ? `elective-${s.short_name || s.code}` : s.code}
+        onClick={() => handleScrollToSubject(s)}
+        className="grid grid-cols-12 items-center py-3 border-b border-white/5 hover:bg-white/10 cursor-pointer transition rounded-lg px-2 -mx-2 group"
+        title={`Click to jump to ${s.short_name} below`}
       >
         <div className="col-span-2 text-[10px] text-cyan-300 font-medium">
           {s.code}
         </div>
 
-        <div className="col-span-6">
-          <div className="text-sm text-white font-medium leading-tight">
-            {s.short_name}
+        <div className="col-span-6 flex items-center justify-between pr-2">
+          <div>
+            <div className="text-sm text-white font-medium leading-tight group-hover:text-cyan-300 transition">
+              {s.short_name}
+            </div>
+            <div className="text-[11px] text-cyan-200/70 truncate">
+              {s.full_name}
+            </div>
           </div>
-          <div className="text-[11px] text-cyan-200/70 truncate">
-            {s.full_name}
-          </div>
+          <span className="text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition hidden sm:inline">
+            ↓
+          </span>
         </div>
 
         <div className="col-span-2 text-center">
@@ -607,26 +719,83 @@ function getPdfSourceType(url: string) {
           {subjects.map((s: any) => (
             <div
               key={s.code}
-              className="space-y-2"
+              id={s.is_elective && s.elective_group ? `subject-${s.elective_group.short_name}` : `subject-${s.code}`}
+              className="space-y-2 scroll-mt-24"
             >
 
             <div
-                  className="bg-white rounded-xl shadow-sm p-5
-                            hover:shadow-md transition
-                            flex flex-col md:flex-row
-                            md:items-center md:justify-between
-                            gap-4"
-                >
+              className={`bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition space-y-4 ${
+                s.is_elective ? "border border-indigo-100 ring-1 ring-indigo-500/10" : ""
+              }`}
+            >
+              {/* ELECTIVE GROUP SELECTOR HEADER (IF ELECTIVE) */}
+              {s.is_elective && s.elective_group && (
+                <div className="border-b border-slate-100 pb-3 mb-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs">
+                        {s.elective_group.short_name}
+                      </span>
+                      {s.elective_group.code && (
+                        <span className="text-xs font-semibold text-slate-500 font-mono">
+                          ({s.elective_group.code})
+                        </span>
+                      )}
+                      <h4 className="text-sm font-semibold text-slate-800">
+                        {s.elective_group.full_name || "Program Elective"}
+                      </h4>
+                    </div>
+                    <span className="text-[11px] text-indigo-600 font-medium">
+                      Tap a subject to select or change:
+                    </span>
+                  </div>
 
-              {/* LEFT INFO */}
-              <div>
-                <h3 className="font-semibold text-slate-800">
-                  {s.full_name}
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Subject Code: {s.code}
-                </p>
-              </div>
+                  {/* PILLS */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {s.elective_group.subjects?.map((child: any) => {
+                      const isSelected = child.code === s.code;
+                      return (
+                        <button
+                          key={child.code}
+                          type="button"
+                          onClick={() => handleSelectElectiveSubject(s.elective_group, child)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                            isSelected
+                              ? "bg-indigo-600 text-white shadow-xs font-semibold ring-2 ring-indigo-500/20"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                          }`}
+                        >
+                          <span>{child.short_name}</span>
+                          {child.full_name && child.full_name !== child.short_name && (
+                            <span className={`text-[10px] hidden sm:inline ${isSelected ? "text-indigo-100" : "text-slate-400"}`}>
+                              ({child.full_name})
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* CARD MAIN ROW */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                {/* LEFT INFO */}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-slate-800">
+                      {s.full_name || s.name || s.short_name}
+                    </h3>
+                    {s.is_elective && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        Selected Elective
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Subject Code: {s.code}
+                  </p>
+                </div>
 
 
 
@@ -710,14 +879,10 @@ function getPdfSourceType(url: string) {
                 </button>
 
               </div>
+            </div>
 
-
-            
-
-
-{/* Viewer of syylabus */}
-                {/* SYLLABUS */}
-                {openSyllabus === s.code && (
+            {/* SYLLABUS */}
+            {openSyllabus === s.code && (
                 <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mt-3">
 
                   {syllabusMap[s.code]?.length ? (

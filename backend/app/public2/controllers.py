@@ -183,6 +183,43 @@ async def sgpa(body, current_user):
             "max_marks": int(sub.get("max_marks", 100))
         }
 
+    # Also include elective groups (e.g. PE-I, PE-II)
+    sub_dict = {s["_id"]: s for s in subs}
+    elective_cursor = db_instance.db.elective_subjects.find(
+        {"semester_code": sem, "branch_code": br}
+    )
+    electives = await elective_cursor.to_list(length=None)
+    for eg in electives:
+        eg_credit = None
+        eg_type = "Theory"
+        eg_max_marks = 100
+        for child in eg.get("subjects", []):
+            sid = child.get("subject_id")
+            if isinstance(sid, str) and ObjectId.is_valid(sid):
+                oid = ObjectId(sid)
+            elif isinstance(sid, ObjectId):
+                oid = sid
+            else:
+                oid = None
+            if oid and oid in sub_dict:
+                cs = sub_dict[oid]
+                if eg_credit is None and cs.get("subject_credit"):
+                    eg_credit = float(cs["subject_credit"])
+                    eg_type = cs.get("subject_type", "Theory")
+                    eg_max_marks = int(cs.get("max_marks", 100))
+                    break
+
+        eg_meta = {
+            "credit": eg_credit if eg_credit is not None else 3.0,
+            "type": eg_type,
+            "max_marks": eg_max_marks,
+        }
+        if eg.get("short_name"):
+            subject_map[eg["short_name"]] = eg_meta
+        if eg.get("code") and eg["code"] not in subject_map:
+            subject_map[eg["code"]] = eg_meta
+        subject_map[str(eg["_id"])] = eg_meta
+
     result  = -1
     total_credit = 0.0
     total_grade_points = 0.0

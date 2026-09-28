@@ -65,6 +65,49 @@ async def get_v2_subjects_ctrl(semester_code: Union[str, int], branch_code: str)
         "branch_code": branch_str
     }
     all_subjects = await db_instance.db.subjects.find(subject_query).sort("code", 1).to_list(None)
+    subject_dict = {s["_id"]: s for s in all_subjects}
+
+    # Enrich elective groups with credit, type, and max_marks from child subjects
+    for eg in elective_docs:
+        eg_credit = None
+        eg_type = "Theory"
+        eg_max_marks = 100
+        enriched_children = []
+        for child in eg.get("subjects", []):
+            sid = child.get("subject_id")
+            if isinstance(sid, str) and ObjectId.is_valid(sid):
+                oid = ObjectId(sid)
+            elif isinstance(sid, ObjectId):
+                oid = sid
+            else:
+                oid = None
+            if oid and oid in subject_dict:
+                cs = subject_dict[oid]
+                if eg_credit is None and cs.get("subject_credit"):
+                    eg_credit = float(cs["subject_credit"])
+                    eg_type = cs.get("subject_type", "Theory")
+                    eg_max_marks = int(cs.get("max_marks", 100))
+                
+                enriched_children.append({
+                    "subject_id": str(oid),
+                    "_id": str(oid),
+                    "code": cs.get("code"),
+                    "short_name": cs.get("short_name") or child.get("short_name"),
+                    "full_name": cs.get("name") or cs.get("full_name") or child.get("full_name"),
+                    "name": cs.get("name") or cs.get("full_name") or child.get("full_name"),
+                    "subject_credit": cs.get("subject_credit"),
+                    "subject_type": cs.get("subject_type", "Theory"),
+                    "max_marks": cs.get("max_marks", 100),
+                })
+            else:
+                enriched_children.append(child)
+        
+        eg["subjects"] = enriched_children
+        eg["subject_credit"] = eg_credit if eg_credit is not None else 3.0
+        eg["subject_type"] = eg_type
+        eg["max_marks"] = eg_max_marks
+        eg["is_elective"] = True
+        eg["name"] = eg.get("full_name")
 
     # 4. Separate regular subjects (subjects whose _id is NOT in elective_subject_ids)
     regular_subjects = [

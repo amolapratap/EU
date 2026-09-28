@@ -105,9 +105,40 @@ const canCalculate =
 
     setLoadingSubjects(true);
 
-    apiGet(`/api/public/subjects?semester_code=${semester}&branch_code=${branch}`)
-      .then(res => setSubjects(res.data || []))
-      .catch(() => setSubjects([]))
+    apiGet(`/api/v2/subjects?semester_code=${semester}&branch_code=${branch}`)
+      .then(res => {
+        const regularSubs = res.data?.regular_subjects || res.regular_subjects || [];
+        const electiveGroups = res.data?.electives || res.electives || [];
+
+        // Format elective groups (e.g. PE-I, PE-II) as single subject rows using db code
+        const seenCodes = new Set(regularSubs.map((s: any) => s.code));
+        const formattedElectives = electiveGroups.map((eg: any) => {
+          const dbCode = eg.code || eg.short_name;
+          const uniqueCode = !seenCodes.has(dbCode) ? dbCode : (eg.short_name || dbCode);
+          seenCodes.add(uniqueCode);
+
+          return {
+            _id: eg._id,
+            code: uniqueCode,
+            db_code: eg.code || eg.short_name,
+            short_name: eg.short_name,
+            name: eg.full_name || eg.name || eg.short_name,
+            full_name: eg.full_name || eg.name || eg.short_name,
+            subject_type: eg.subject_type || "Theory",
+            subject_credit: eg.subject_credit || 3,
+            max_marks: eg.max_marks || 100,
+            is_elective: true,
+            child_subjects: eg.subjects || [],
+          };
+        });
+
+        setSubjects([...regularSubs, ...formattedElectives]);
+      })
+      .catch(() => {
+        apiGet(`/api/public/subjects?semester_code=${semester}&branch_code=${branch}`)
+          .then(res => setSubjects(res.data || []))
+          .catch(() => setSubjects([]));
+      })
       .finally(() => setLoadingSubjects(false));
   }, [semester, branch]);
 
@@ -338,11 +369,18 @@ return (
 
               {/* SUBJECT */}
               <div>
-                <p className="text-sm font-medium text-slate-800">
-                  {sub.short_name}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium text-slate-800">
+                    {sub.short_name}
+                  </p>
+                  {sub.is_elective && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 font-medium border border-indigo-200/60">
+                      Elective
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">
-                  {sub.code}
+                  {sub.db_code || sub.code}
                 </p>
               </div>
 
@@ -413,11 +451,18 @@ return (
                          items-center gap-2 py-1"
             >
               <div>
-                <p className="text-sm font-medium text-slate-800">
-                  {sub.short_name}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium text-slate-800">
+                    {sub.short_name}
+                  </p>
+                  {sub.is_elective && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 font-medium border border-green-200/60">
+                      Elective
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">
-                  {sub.code}
+                  {sub.db_code || sub.code}
                 </p>
               </div>
 
