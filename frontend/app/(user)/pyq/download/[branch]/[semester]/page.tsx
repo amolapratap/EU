@@ -307,6 +307,29 @@ export default function PyqDownloadPage() {
 
 
 
+  function formatModuleTitle(unitTitle: string, index: number): string {
+    const moduleNum = index + 1;
+    const raw = (unitTitle || "").trim();
+    if (!raw) {
+      return `MODULE ${moduleNum}`;
+    }
+
+    // Clean trailing colons and whitespace
+    const cleaned = raw.replace(/[:\s]+$/, "");
+
+    // Match existing "MODULE 1:", "Module 1 -", "Unit 1.0:", "Unit 1.0 (Something)", "Unit 3.0", etc.
+    const match = cleaned.match(/^(?:module|unit)\s*(?:[\d]+|[ivx]+)(?:\.0?)?\s*[:\-\–\—\(\)]*\s*(.*?)\s*\)?$/i);
+    if (match) {
+      const rest = match[1].replace(/^[:\-\–\—\s()]+|[:\-\–\—\s()]+$/g, "").trim();
+      if (rest) {
+        return `MODULE ${moduleNum}: ${rest}`;
+      }
+      return `MODULE ${moduleNum}`;
+    }
+
+    return `MODULE ${moduleNum}: ${cleaned}`;
+  }
+
   function SyllabusAccordion({ syllabus }: any) {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
   
@@ -326,7 +349,7 @@ export default function PyqDownloadPage() {
                          bg-indigo-100 hover:bg-indigo-200"
             >
               <span className="font-semibold text-indigo-800">
-                {unit.unit}
+                {formatModuleTitle(unit.unit, i)}
               </span>
   
               <span>{openIndex === i ? "−" : "+"}</span>
@@ -892,7 +915,7 @@ function getPdfSourceType(url: string) {
 
                         {/* MODULE */}
                         <h4 className="font-semibold text-indigo-800">
-                          {unit.unit}
+                          {formatModuleTitle(unit.unit, i)}
                         </h4>
 
                         {/* TOPICS */}
