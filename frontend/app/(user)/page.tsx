@@ -6,6 +6,8 @@ import { useAuthModal } from "@/components/auth/AuthModal";
 import { useAuth } from "@/lib/auth";
 import { Check, ClipboardList } from "lucide-react";
 import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
+import { GooglePlayIcon, PLAY_STORE_URL } from "@/components/app-promo/GooglePlayButton";
 
 export default function HomePage() {
   const { showLogin, showSignup } = useAuthModal();
@@ -94,6 +96,18 @@ export default function HomePage() {
         >
           Calculate CGPA
         </Link>
+
+        <a
+          href={PLAY_STORE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-8 py-3 rounded-xl bg-slate-950 text-white border border-white/20
+                     font-semibold shadow-lg hover:scale-105 hover:bg-black hover:shadow-xl
+                     transition duration-200 inline-flex items-center gap-2.5"
+        >
+          <GooglePlayIcon className="w-5 h-5" />
+          <span>Get Android App</span>
+        </a>
       </div>
 
       {/* AUTH CTA */}
@@ -144,6 +158,11 @@ export default function HomePage() {
       {/* ================= MCQ TEST SPOTLIGHT ================= */}
       <section className="container mx-auto px-6">
         <McqTestPromoBanner />
+      </section>
+
+      {/* ================= APP DOWNLOAD SPOTLIGHT ================= */}
+      <section className="container mx-auto px-6">
+        <AppPromoBanner variant="card" />
       </section>
 
 

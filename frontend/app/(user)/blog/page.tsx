@@ -15,6 +15,7 @@ import {
   Table as TableIcon,
 } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 interface BlogPost {
   _id: string;
@@ -157,6 +158,10 @@ export default function BlogListPage() {
           </div>
         </div>
       </section>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+        <AppPromoBanner context="general" variant="compact" />
+      </div>
 
       {/* ===== POSTS GRID ===== */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-10">

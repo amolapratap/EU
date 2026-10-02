@@ -12,6 +12,7 @@ import {
 } from "./services/missingPaperApi";
 
 import { MissingPaper } from "./types/missing-paper";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 export default function MissingPapersPage() {
 
@@ -171,6 +172,7 @@ export default function MissingPapersPage() {
 
           </div>
 
+          <AppPromoBanner context="general" variant="compact" className="mt-8" />
         </div>
 
       </div>

@@ -97,6 +97,16 @@ body {
   box-shadow: 0 0 0 3px rgba(91, 46, 189, 0.18);
 }
 
+/* Hide number input spinners so placeholders like 'Max 100' are never clipped */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 /* -------------------- */
 /*  GLASS MODAL         */
 /* -------------------- */

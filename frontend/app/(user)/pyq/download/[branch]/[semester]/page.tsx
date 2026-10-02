@@ -16,6 +16,8 @@ import { BRANCHES } from "@/lib/constants/academic";
 
 import { getPosterPath } from "@/lib/posters";
 import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
+import AppDownloadModal from "@/components/app-promo/AppDownloadModal";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 // import { PdfViewer } from "@/components/academic/PdfViewer"
 import dynamic from "next/dynamic";
@@ -409,6 +411,8 @@ function getPdfSourceType(url: string) {
   /*--------------------UI-------------------------*/
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
+      {/* Auto Pop-up for Alpha Result App */}
+      <AppDownloadModal autoPop={true} delayMs={2500} />
 
       {/* HEADER */}
       <div className="text-center">
@@ -430,6 +434,7 @@ function getPdfSourceType(url: string) {
         </p>
       </div>
 
+      <AppPromoBanner context="pyq-download" variant="strip" />
       <McqTestPromoBanner variant="strip" />
 
 
@@ -514,6 +519,14 @@ function getPdfSourceType(url: string) {
 
       
 <div className="space-y-6">
+
+{/* Auto Pop-up for Alpha Result App */}
+<AppDownloadModal autoPop={true} delayMs={2500} />
+
+{/* App Release Banner */}
+<div className="w-full max-w-3xl mx-auto">
+  <AppPromoBanner variant="compact" />
+</div>
 
 {/* 🔥 SINGLE POSTER */}
 <div

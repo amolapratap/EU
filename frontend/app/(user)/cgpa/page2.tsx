@@ -294,16 +294,16 @@ return (
             Practical Subjects
           </h4>
 
-          <div className="grid grid-cols-[1fr_85px]
+          <div className="grid grid-cols-[1fr_116px] sm:grid-cols-[1fr_130px]
                           text-xs text-gray-500 border-b pb-2">
             <span>Subject</span>
-            <span className="text-center">Total</span>
+            <span className="text-center">Total Marks</span>
           </div>
 
           {practicalSubjects.map(sub => (
             <div
               key={sub.code}
-              className="grid grid-cols-[1fr_100px]
+              className="grid grid-cols-[1fr_116px] sm:grid-cols-[1fr_130px]
                          items-center gap-2 py-1"
             >
               <div>
@@ -320,7 +320,7 @@ return (
                 min={0}
                 max={sub.max_marks}
                 placeholder={`Max ${sub.max_marks}`}
-                className="input h-9  text-center"
+                className="input h-9 w-full !px-2 text-center text-xs sm:text-sm font-medium"
                 value={(marks[sub.code] as PracticalMarks)?.total ?? ""}
                 onChange={e =>
                   setMarks(prev => ({

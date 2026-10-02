@@ -6,6 +6,7 @@ import { BookOpenCheck, CalendarDays, ClipboardList, FileText, Hash, Loader2, Pl
 
 import { apiGet } from "@/lib/api";
 import type { QuizPaperListResponse } from "./types";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 export default function TestLandingPage() {
   const [search, setSearch] = useState("");
@@ -60,6 +61,8 @@ export default function TestLandingPage() {
             </Link>
           </div>
         </section>
+
+        <AppPromoBanner context="test" variant="compact" />
 
         <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100">

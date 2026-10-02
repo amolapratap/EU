@@ -21,11 +21,14 @@
 "use client";
 
 import Link from "next/link";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 export default function ResultPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <AppPromoBanner context="result" variant="compact" />
+
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl">

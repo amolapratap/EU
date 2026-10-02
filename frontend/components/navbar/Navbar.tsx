@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useAuthModal } from "@/components/auth/AuthModal";
-import { ChevronDown } from "lucide-react";
-import { Triangle } from "lucide-react";
+import { ChevronDown, Triangle, Menu, X } from "lucide-react";
 import ProfileMenu from "./ProfileMenu";
+import { GooglePlayIcon, PLAY_STORE_URL } from "@/components/app-promo/GooglePlayButton";
 
 import { usePathname } from "next/navigation";
 
@@ -259,21 +259,19 @@ const [openMenu, setOpenMenu] = useState<string | null>(null);
       <div className="container flex items-center justify-between py-4">
 
         {/* LOGO */}
-        <Link href="/" className="flex items-center gap-3">
-          <div >
-            
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-200/80 group-hover:scale-105 transition-transform shrink-0">
             <Image
-                src="/ar_logo2.png"
-                alt="Alpha Result"
-                width={44}
-                height={44}
-                className="object-contain"
-                priority
+              src="/alpha_result_logo.png"
+              alt="Alpha Result"
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              priority
             />
-
           </div>
           <div>
-            <div className="font-extrabold text-lg text-slate-900">
+            <div className="font-extrabold text-lg text-slate-900 leading-tight">
               Alpha Result
             </div>
             <div className="text-xs text-slate-500">
@@ -514,41 +512,52 @@ links.map(link => (
           {/* <Link href="/about" className="hover:text-[#5B2EBD]">About</Link>
         </nav> */}
 
-        {/* AUTH */}
-        <div className="hidden md:flex">
-          {!user ? (
-            <button onClick={showLogin} className="btn-primary">
-              Sign In
-            </button>
-          ) : (
-            <ProfileMenu user={user} />
-          )}
+        {/* RIGHT ACTIONS: APP PROMO + AUTH + MOBILE MENU */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* App download button visible on ALL screen sizes (Mobile + Desktop) */}
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
+                       bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 border border-emerald-300/90
+                       hover:from-emerald-100 hover:to-teal-100 hover:border-emerald-400 transition-all shadow-xs hover:shadow active:scale-95 shrink-0"
+            title="Download Alpha Result Android App"
+          >
+            <GooglePlayIcon className="w-3.5 h-3.5" />
+            <span className="font-bold">App</span>
+            <span className="hidden sm:inline">Download</span>
+            <span className="flex h-1.5 w-1.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+          </a>
+
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center">
+            {!user ? (
+              <button onClick={showLogin} className="btn-primary">
+                Sign In
+              </button>
+            ) : (
+              <ProfileMenu user={user} />
+            )}
+          </div>
+
+          {/* Mobile Menu Toggle Button */}
+          <button
+            onClick={() => setOpen(!open)}
+            className="md:hidden p-2 rounded-xl text-slate-800 hover:bg-slate-100 active:bg-slate-200 transition focus:outline-none"
+            aria-label={open ? "Close menu" : "Open menu"}
+          >
+            {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
-
-
-
-
-
-
-        {/* MOBILE */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden text-slate-800"
-        >
-          ☰
-        </button>
       </div>
 
-
-
-
       {/* MOBILE MENU */}
-{/* MOBILE MENU */}
-    
-
-      {/* MOBILE MENU */}
-{open && (
-  <div className="md:hidden bg-white border-t px-6 py-4 space-y-4">
+      {open && (
+        <div className="md:hidden bg-white border-t border-slate-100 px-6 py-5 space-y-4 max-h-[calc(100vh-76px)] overflow-y-auto shadow-xl">
 
     {isAdminArea ? (
 
@@ -740,6 +749,19 @@ links.map(link => (
       </>
 
     )}
+
+    {/* Android App Button */}
+    <a
+      href={PLAY_STORE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-2.5 w-full py-2.5 px-4 rounded-xl
+                 bg-slate-900 text-white font-medium text-sm shadow-md hover:bg-black transition"
+    >
+      <GooglePlayIcon className="w-4 h-4" />
+      <span>Download Android App</span>
+      <span className="text-[10px] uppercase font-bold tracking-wider bg-emerald-500 text-white px-1.5 py-0.5 rounded">Free</span>
+    </a>
 
     {!user ? (
       <button

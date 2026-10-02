@@ -12,6 +12,7 @@ import Providers from "./providers";
 import { Toaster } from "sonner";
 
 import OneSignalProvider from "@/components/providers/OneSignalProvider";
+import MobileAppStickyBar from "@/components/app-promo/MobileAppStickyBar";
 
 export const metadata = {
   title: "Alpha Result - PYQs, Solutions, Results & SGPA Calculator",
@@ -65,6 +66,9 @@ export default function RootLayout({ children }: any) {
 
               {/* FOOTER */}
               <Footer />
+
+              {/* MOBILE APP STICKY BAR */}
+              <MobileAppStickyBar />
             </div>
 
 

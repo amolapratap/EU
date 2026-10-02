@@ -13,6 +13,7 @@ import { SEMESTERS } from "@/lib/constants/academic";
 import { BRANCHES } from "@/lib/constants/academic";
 
 import { getPosterPath } from "@/lib/posters";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 const semesters = SEMESTERS;
 const branches = BRANCHES;
@@ -223,11 +224,14 @@ return (
 
 
       {/* INFO INTRO */}
-      <div className="text-sm text-slate-600 text-center max-w-2xl mx-auto">
+      <div className="text-sm text-slate-600 text-center max-w-2xl mx-auto space-y-4">
         <p>
           This SGPA calculator helps you estimate your semester performance based on your internal and external marks. 
           Simply enter your marks for each subject and get your SGPA instantly.
         </p>
+
+        {/* CGPA App Promotion Banner */}
+        <AppPromoBanner context="cgpa" variant="compact" />
       </div>
 
 
@@ -348,25 +352,19 @@ return (
           {/* HEADER */}
           {/* <div className="grid grid-cols-[1fr_72px_72px]
                           text-xs text-gray-500 border-b pb-2"> */}
-          <div className="grid grid-cols-[1fr_110px_110px] text-xs text-gray-500 border-b pb-2">
-
+          {/* HEADER */}
+          <div className="grid grid-cols-[1fr_96px_96px] sm:grid-cols-[1fr_116px_116px] text-xs text-gray-500 border-b pb-2">
             <span>Subject</span>
             <span className="text-center">Ext (End-Sem)</span>
             <span className="text-center">Int (Mid-Sem)</span>
           </div>
           
           {theorySubjects.map(sub => (
-            // <div
-            //   key={sub.code}
-            //   className="grid grid-cols-[1fr_72px_72px]
-            //              items-center gap-2 py-1"
-            // >
- <div
+            <div
               key={sub.code}
-              className="grid grid-cols-[1fr_100px_100px]
+              className="grid grid-cols-[1fr_96px_96px] sm:grid-cols-[1fr_116px_116px]
                          items-center gap-2 py-1"
             >
-
               {/* SUBJECT */}
               <div>
                 <div className="flex items-center gap-1.5">
@@ -390,7 +388,7 @@ return (
                 min={0}
                 max={70}
                 placeholder="Max 70"
-                className="input h-9 w-24 sm:w-28 md:w-32 text-center"
+                className="input h-9 w-full !px-2 text-center text-xs sm:text-sm font-medium"
                 value={(marks[sub.code] as TheoryMarks)?.external ?? ""}
                 onChange={e =>
                   setMarks(prev => ({
@@ -408,10 +406,11 @@ return (
 
               {/* INTERNAL */}
               <input
-                type="number"min={0}
+                type="number"
+                min={0}
                 max={30}
                 placeholder="Max 30"
-                className="input h-9 w-24 sm:w-28 md:w-32 text-center"
+                className="input h-9 w-full !px-2 text-center text-xs sm:text-sm font-medium"
                 value={(marks[sub.code] as TheoryMarks)?.internal ?? ""}
                 onChange={e =>
                   setMarks(prev => ({
@@ -438,16 +437,16 @@ return (
             Practical Subjects
           </h4>
 
-          <div className="grid grid-cols-[1fr_85px]
+          <div className="grid grid-cols-[1fr_116px] sm:grid-cols-[1fr_130px]
                           text-xs text-gray-500 border-b pb-2">
             <span>Subject</span>
-            <span className="text-center">Total</span>
+            <span className="text-center">Total Marks</span>
           </div>
 
           {practicalSubjects.map(sub => (
             <div
               key={sub.code}
-              className="grid grid-cols-[1fr_100px]
+              className="grid grid-cols-[1fr_116px] sm:grid-cols-[1fr_130px]
                          items-center gap-2 py-1"
             >
               <div>
@@ -471,7 +470,7 @@ return (
                 min={0}
                 max={sub.max_marks}
                 placeholder={`Max ${sub.max_marks}`}
-                className="input h-9  text-center"
+                className="input h-9 w-full !px-2 text-center text-xs sm:text-sm font-medium"
                 value={(marks[sub.code] as PracticalMarks)?.total ?? ""}
                 onChange={e =>
                   setMarks(prev => ({

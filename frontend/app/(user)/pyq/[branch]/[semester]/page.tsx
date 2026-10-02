@@ -18,6 +18,7 @@ import { Share2, Share, RefreshCw, ClipboardList } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
+import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 
 
@@ -614,6 +615,7 @@ useEffect(() => {
     This section provides previous year questions along with detailed solutions for your selected subject. 
     Practicing these questions helps you understand exam patterns and improve your preparation.
   </p>
+  <AppPromoBanner context="pyq-solution" variant="strip" />
   <McqTestPromoBanner variant="strip" />
 </div>
 

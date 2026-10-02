@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { apiPost } from "@/lib/api";
 import { toast } from "sonner";
-
-
+import GooglePlayButton, { PLAY_STORE_URL } from "@/components/app-promo/GooglePlayButton";
 
 export default function Footer() {
 
@@ -63,17 +62,27 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
 
         {/* BRAND */}
-        <div>
-          <h2 className="text-white font-extrabold text-xl mb-3">
-            Alpha Result
-          </h2>
-          <p className="text-sm leading-relaxed">
-            Smarter exam preparation with PYQs, solutions, and tools designed
-            especially for university students.
-          </p>
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-white font-extrabold text-xl mb-2">
+              Alpha Result
+            </h2>
+            <p className="text-sm leading-relaxed text-slate-400">
+              Smarter exam preparation with PYQs, solutions, and tools designed
+              especially for university students.
+            </p>
+          </div>
+
+          {/* OFFICIAL APP DOWNLOAD */}
+          <div className="pt-1">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
+              Official Android App
+            </p>
+            <GooglePlayButton size="sm" variant="dark" />
+          </div>
 
           {/* CONTACT EMAIL */}
-          <p className="text-sm mt-4">
+          <p className="text-sm">
             Contact us:
             <a
               href="mailto:alpharesult.in@gmail.com"
@@ -93,6 +102,17 @@ export default function Footer() {
             {/* <li><Link href="/result" className="hover:text-white">Result</Link></li> */}
             <li><Link href="/cgpa" className="hover:text-white">CGPA</Link></li>
             <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
+            <li>
+              <a
+                href={PLAY_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-1.5"
+              >
+                <span>Android App</span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">New</span>
+              </a>
+            </li>
             <li><Link href="/about" className="hover:text-white">About</Link></li>
           </ul>
         </div>
