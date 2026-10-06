@@ -507,7 +507,7 @@ function PaperModal({ subject, data, onClose, onSaved }: any) {
           onChange={e => setpaper_type(e.target.value)}>
           <option>regular</option>
           <option>special</option>
-          <option>complement</option>
+          <option>Supplementary</option>
         </select>
 
         </div>

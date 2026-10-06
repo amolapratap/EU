@@ -31,7 +31,7 @@ const EXAM_TYPES = [
 const PAPER_TYPES = [
   "regular",
   "special",
-  "complement",
+  "Supplementary",
 ];
 
 export default function AddMissingPaperDialog({

@@ -1,6 +1,3 @@
-
-
-
 # Alpha Result
 
 Alpha Result is a student-focused platform built for Bihar Engineering University (BEU) students to access Previous Year Questions (PYQs), Solutions, Results, Notices, SGPA Calculator, and other academic resources in one place.
@@ -11,25 +8,26 @@ Alpha Result is a student-focused platform built for Bihar Engineering Universit
 
 ### PYQ Library
 
-* Branch & Semester wise PYQs
-* Multiple exam types:
-
-  * END-SEM
-  * MID-SEM
-  * NPTEL
-  * QUIZ
-  * PRACTICE
-* Regular / Special / Complement papers
-* PDF Downloads
+- Branch & Semester wise PYQs
+- Multiple exam types:
+  - END-SEM
+  - MID-SEM
+  - NPTEL
+  - QUIZ
+  - PRACTICE
+- Regular / Special / Supplementary papers
+- PDF Downloads
 
 ### Solutions Platform
 
-* Text-based solutions
-* Image-based solutions
-* Markdown support
-* LaTeX support
-* Objective & Subjective questions
-* Single and Multi-question structures
+- Text-based solutions
+- Image-based solutions
+- Markdown support
+- LaTeX support
+- Objective & Subjective questions
+- Single and Multi-question structures
+
+
 
 ### Missing Papers System
 
@@ -41,79 +39,95 @@ Missing → Under Review → Approved
 
 Features:
 
-* Student uploads
-* Admin review
-* PDF validation
-* Community contribution model
+- Student uploads
+- Admin review
+- PDF validation
+- Community contribution model
+
+
 
 ### Notices
 
-* Fetches notices from BEU
-* Stores notices locally
-* Future support:
+- Fetches notices from BEU
+- Stores notices locally
+- Future support:
+  - Browser notifications
+  - Telegram alerts
+  - Email alerts
 
-  * Browser notifications
-  * Telegram alerts
-  * Email alerts
+
 
 ### User System
 
-* Authentication
-* Profile management
-* Contribution tracking
+- Authentication
+- Profile management
+- Contribution tracking
+
+
 
 ### Admin Panel
 
-* Manage semesters
-* Manage branches
-* Manage subjects
-* Manage papers
-* Review submissions
-* Manage notices
+- Manage semesters
+- Manage branches
+- Manage subjects
+- Manage papers
+- Review submissions
+- Manage notices
 
 ---
 
+
+
 # Tech Stack
+
+
 
 ## Frontend
 
-* Next.js 14
-* TypeScript
-* Tailwind CSS
-* React Query
-* Sonner
-* Lucide Icons
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- React Query
+- Sonner
+- Lucide Icons
+
+
 
 ## Backend
 
-* FastAPI
-* Python
-* MongoDB
-* APScheduler (Local)
-* GitHub Actions Scheduler (Production)
+- FastAPI
+- Python
+- MongoDB
+- APScheduler (Local)
+- GitHub Actions Scheduler (Production)
+
+
 
 ## Storage
 
-* Cloudinary
+- Cloudinary
+  - Paper PDFs
+  - Solution Images
 
-  * Paper PDFs
-  * Solution Images
+
 
 ## Deployment
 
 Frontend:
 
-* Vercel
+- Vercel
 
 Backend:
 
-* Vercel
+- Vercel
 
 Database:
 
-* MongoDB Atlas
+- MongoDB Atlas
 
 ---
+
+
 
 # Project Structure
 
@@ -133,6 +147,8 @@ backend/
 ├── utils/
 
 ---
+
+
 
 # Solution Architecture
 
@@ -163,13 +179,15 @@ Backward compatibility is maintained.
 
 If solution_blocks exist:
 
-* Render blocks
+- Render blocks
 
 Else:
 
-* Render solution_md
+- Render solution_md
 
 ---
+
+
 
 # Notice Automation
 
@@ -189,27 +207,32 @@ Browser Notifications
 
 Production Scheduler:
 
-* GitHub Actions
+- GitHub Actions
 
 Schedule:
 
-* Every 10 minutes
+- Every 10 minutes
 
 ---
+
+
 
 # Environment Variables
 
 ##Frontend (.env.local)
+
 ### Backend API
-NEXT_PUBLIC_API_URL=http://localhost:8000
+
+NEXT_PUBLIC_API_URL=[http://localhost:8000](http://localhost:8000)
 
 ### OneSignal
+
 NEXT_PUBLIC_ONESIGNAL_APP_ID=
 
 ### Google Analytics
+
 NEXT_PUBLIC_GA_ID=
 Backend (.env)
-
 
 ### SECURITY
 
@@ -233,7 +256,6 @@ CLOUDINARY_API_SECRET=
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 
-
 ### ONESIGNAL PUSH NOTIFICATIONS
 
 ONESIGNAL_APP_ID=
@@ -245,13 +267,19 @@ CRON_SECRET=
 
 ### CORS
 
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=[http://localhost:3000](http://localhost:3000)
 
 ### Production Example:
-### FRONTEND_URL=https://alpharesult.in
+
+
+
+### FRONTEND_URL=[https://alpharesult.in](https://alpharesult.in)
+
 
 
 # Local Development
+
+
 
 ### Frontend
 
@@ -265,99 +293,3 @@ uvicorn app.main:app --reload
 
 ---
 
-# Contribution Guidelines
-
-Before pushing code:
-
-1. Create a feature branch
-2. Test locally
-3. Create Pull Request
-4. Review changes
-5. Merge into main
-
-Branch naming:
-
-feature/xyz
-fix/xyz
-hotfix/xyz
-
-Examples:
-
-feature/missing-papers
-feature/notice-alerts
-fix/solution-rendering
-
----
-
-# Future Roadmap
-
-* Interactive Quiz Mode
-
-Convert objective questions into an interactive quiz experience.
-
-Features:
-
-Attempt MCQs directly on the platform
-Instant answer checking
-Explanations after submission
-Topic-wise practice
-Exam simulation mode
-Accuracy tracking
-
-
-* AI Solution Evaluator
-
-Allow students to evaluate their own answers using AI.
-
-Workflow:
-
-Question
-↓
-Student writes answer OR uploads answer image
-↓
-AI compares with model solution
-↓
-Generates feedback
-
-Features:
-
-Accuracy percentage score
-Missing points detection
-Strengths and weaknesses analysis
-Improvement suggestions
-Marks estimation
-Handwritten answer evaluation (image upload)
-
-Example Output:
-
-Accuracy Score: 82%
-
-Estimated Marks:
-11 / 14
-
-* Contributor Leaderboard
-* Advanced Search
-
----
-
-# Maintainers
-
-Alpha Result Team
-
-Built to help BEU students learn faster, prepare better, and help their juniors.
-
-
-
-
-
-
-<!-- 
-git config --global user.email
-git config --global user.name
-
-git config --global user.email "new-vercel-email@gmail.com"
-
-
-npm install react-select
-
-time = datetime.now(timezone.utc).replace(tzinfo=None) -->
