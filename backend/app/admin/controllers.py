@@ -756,6 +756,7 @@ async def upload_pdf_to_cloudinary(file, branch, sem, subject, year, exam_type, 
         resource_type=resource_type,
         public_id=public_id,
         overwrite=True,    #Upload again → replaces old file❗
+        invalidate=True,
     )
 
     return {
@@ -765,11 +766,127 @@ async def upload_pdf_to_cloudinary(file, branch, sem, subject, year, exam_type, 
     }
 
 
+async def generate_and_upload_paper_pdf(paper_id: str, admin, with_watermark: bool = True):
+    if not ObjectId.is_valid(paper_id):
+        raise HTTPException(status_code=400, detail="Invalid paper_id")
+
+    paper = await db_instance.db.papers.find_one({"_id": ObjectId(paper_id)})
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    questions = paper.get("questions") or []
+    if len(questions) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate PDF: No questions found in this paper."
+        )
+
+    # Fetch associated subject strictly by subject_id (do not look up by subject_code)
+    subject = None
+    if paper.get("subject_id"):
+        try:
+            sub_oid = (
+                paper["subject_id"]
+                if isinstance(paper["subject_id"], ObjectId)
+                else ObjectId(str(paper["subject_id"]))
+            )
+            subject = await db_instance.db.subjects.find_one({"_id": sub_oid})
+        except Exception:
+            subject = None
+
+    if not subject:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate PDF: Associated subject (subject_id) not found for this paper."
+        )
+
+    sem = str(subject.get("semester_code") or "").strip()
+    if not sem:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate PDF: Semester code is missing in the associated subject."
+        )
+
+    # 1. Generate university format PDF in memory (questions only, no solutions)
+    import importlib
+    import app.utils.paper_pdf_generator as _paper_pdf_gen
+    importlib.reload(_paper_pdf_gen)
+    raw_pdf_bytes = _paper_pdf_gen.generate_university_paper_pdf_bytes(
+        paper, subject, with_watermark=with_watermark
+    )
+
+    # 2. Apply Alpha Result branding (footer + clickable link)
+    processed_pdf = await process_pdf_branding(raw_pdf_bytes)
+
+    # 3. Resolve branch, semester, subject_code, year, exam_type for Cloudinary hierarchy
+    subject_code = str(
+        paper.get("subject_code") or subject.get("code") or "SUBJECT"
+    ).strip()
+
+    branch = "COMMON"
+    if subject.get("branch_code"):
+        b_code = subject["branch_code"]
+        if isinstance(b_code, list) and len(b_code) > 0:
+            branch = str(b_code[0])
+        elif isinstance(b_code, str) and b_code.strip():
+            branch = b_code.strip()
+    elif len(subject_code) >= 3 and subject_code[:3].isdigit():
+        branch = subject_code[:3]
+
+    year = str(paper.get("year") or "").strip()
+    p_type = str(paper.get("type") or "END").strip()
+    p_sub_type = str(paper.get("paper_type") or "regular").strip()
+    exam_type = f"{p_type}_{p_sub_type}"
+
+    # 4. Upload to Cloudinary
+    result = await upload_pdf_to_cloudinary(
+        processed_pdf,
+        branch,
+        sem,
+        subject_code,
+        year,
+        exam_type,
+        admin
+    )
+
+    secure_url = result.get("secure_url")
+    public_id = result.get("public_id")
+    if not secure_url:
+        raise HTTPException(
+            status_code=500,
+            detail=result.get("error", "Cloudinary PDF upload failed")
+        )
+
+    # 5. Store link back in MongoDB papers document
+    await db_instance.db.papers.update_one(
+        {"_id": ObjectId(paper_id)},
+        {
+            "$set": {
+                "paper_pdf": secure_url,
+                "paper_pdf_public_id": public_id,
+                "updated_at": utcnow(),
+            },
+            "$addToSet": {
+                "admin_userids": admin["admin_userid"]
+            }
+        }
+    )
+
+    return {
+        "success": True,
+        "message": "Question paper PDF generated and uploaded to Cloudinary successfully",
+        "data": {
+            "url": secure_url,
+            "public_id": public_id,
+        }
+    }
+
+
 
 
 #===============Branding===================#
 logo_path = "app/assets/ar_only_logo_watermark.png"
-ALPHA_URL = "https://alpharesult.in"
+ALPHA_URL = "https://play.google.com/store/apps/details?id=in.alpharesult.app"
 
 # -------------------------
 # 1. LOGO WATERMARK (CENTER)

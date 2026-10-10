@@ -23,6 +23,8 @@ cloudinary==1.40.0
 pymupdf==1.26.7
 requests==2.31.0
 apscheduler
+reportlab>=4.0.0
+
 
 
 

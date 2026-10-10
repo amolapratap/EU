@@ -1,0 +1,161 @@
+{
+  "university": "Bihar Engineering University, Patna",
+  "examination": "B.Tech 6<sup>th</sup> Semester Examination, 2024",
+  "course": "B.Tech",
+  "subject": "Electrical Drives",
+  "code": "100613",
+  "time": "03 Hours",
+  "full_marks": "70",
+  "instructions": [
+    "(i) The marks are indicated in the right-hand margin.",
+    "(ii) There are <b>NINE</b> questions in this paper.",
+    "(iii) Attempt <b>FIVE</b> questions in all.",
+    "(iv) Question No. <b>1</b> is compulsory."
+  ],
+  "q1": {
+    "heading": "Choose the correct answer the following (Any seven question only):",
+    "marks": "[2 x 7 = 14]",
+    "page1_mcqs": [
+      {
+        "id": "(a)",
+        "question": "The consideration involved in the selection of the type of electric drive for a particular application depends upon",
+        "options": [
+          ["(i)", "Speed control range and its nature", "(iii)", "Starting Nature"],
+          ["(ii)", "Environmental condition", "(iv)", "All of the above"]
+        ]
+      },
+      {
+        "id": "(b)",
+        "question": "The consideration involved in the selection of the type of electric drive for the Load Variation application depends upon",
+        "options": [
+          ["(i)", "Constant Load", "(iii)", "Pulsating Load"],
+          ["(ii)", "Continuous Variable Load", "(iv)", "All of the above"]
+        ]
+      },
+      {
+        "id": "(c)",
+        "question": "Which type of drive can be used for Minning Process?",
+        "options": [
+          ["(i)", "DC Motor with Ward Leonard Speed control", "(iii)", "Slip Ring Induction Motor"],
+          ["(ii)", "Double Squirrel cage Induction Motor", "(iv)", "All of the above"]
+        ]
+      },
+      {
+        "id": "(d)",
+        "question": "For an application which requires smooth and precise speed control over the wide range, the motor is preferred is",
+        "options": [
+          ["(i)", "Squirrel cage Induction Motor", "(iii)", "DC motor"],
+          ["(ii)", "Synchronous Motor", "(iv)", "Wound Rotor Induction Motor"]
+        ]
+      },
+      {
+        "id": "(e)",
+        "question": "If the current in the armature of d.c series motor is reduced to 5%, the torque of the motor will become:",
+        "options": [
+          ["(i)", "50% of the Previous Value", "(iii)", "150% of the Previous Value"],
+          ["(ii)", "25% of the Previous Value", "(iv)", "100% of the Previous Value"]
+        ]
+      },
+      {
+        "id": "(f)",
+        "question": "In case of a 3 phase induction motor, plugging is done by:",
+        "options": [
+          ["(i)", "Starting the motor on load which is more than the rated load", "(iii)", "Interchanging connections of any two phases of the stator for quick stopping"],
+          ["(ii)", "Pulling the motor directly on line without a starter", "(iv)", "Locking of the rotor due to harmonics"]
+        ]
+      },
+      {
+        "id": "(g)",
+        "question": "Which type of Motor is best suited for the excavator?",
+        "options": [
+          ["(i)", "DC Shunt Motor", "(iii)", "DC series Motor"],
+          ["(ii)", "Differential Motor", "(iv)", "DC series Motor"]
+        ]
+      },
+      {
+        "id": "(h)",
+        "question": "Belt conveyors offer",
+        "options": [
+          ["(i)", "Zero starting torque", "(iii)", "Medium starting torque"],
+          ["(ii)", "Low starting torque", "(iv)", "High starting torque"]
+        ]
+      },
+      {
+        "id": "(i)",
+        "question": "The traveling speed of the crane varies from",
+        "options": [
+          ["(i)", "1 to 2.5 m/s", "(iii)", "10 to 20 m/s"],
+          ["(ii)", "5 to 10 m/s", "(iv)", "25 to 40 m/s"]
+        ]
+      }
+    ],
+    "page2_mcqs": [
+      {
+        "id": "(j)",
+        "question": "Regenerative braking mode can be achieved in which quadrant (V-I curve)?",
+        "options": [
+          ["(i)", "Third", "(iii)", "Fourth"],
+          ["(ii)", "Second", "(iv)", "First"]
+        ]
+      }
+    ]
+  },
+  "long_questions": [
+    {
+      "num": "Q.2",
+      "parts": [
+        ["(a)", "Draw the schematic representation and equivalent circuit of a DC machine and derive the expression for induced emf and electromagnetic torque.", "[7]"],
+        ["(b)", "A 220 V, 500 A, 600 rpm separately excited motor has armature and field resistance of 0.02 and 10 ohm respectively. The load torque is given by the expression T<sub>L</sub> = 2000 - 2N, N-m, where N is the speed in rpm. Speeds below the rated are obtained by armature voltage control and depends above the rated are obtained by field control.<br/>i)&nbsp;&nbsp;Calculate motor terminal voltage and armature current when the speed is 450 rpm.<br/>ii)&nbsp;Calculate field winding voltage and armature current when the speed is 750 rpm. Assume the rated field voltage is the same as the rated armature voltage", "[7]"]
+      ]
+    },
+    {
+      "num": "Q.3",
+      "parts": [
+        ["(a)", "Draw the diagram and Derive the transfer function of a self excited DC motor load converter system Draw the diagram and Derive the transfer function of a self excited DC motor load converter system", "[7]"],
+        ["(b)", "Illustrate the use of inner current loop in closed loop speed control.", "[7]"]
+      ]
+    },
+    {
+      "num": "Q.4",
+      "parts": [
+        ["(a)", "Explain with neat sketch the chopper control method of speed control of DC Motors.", "[7]"],
+        ["(b)", "When varying speed by field flux control, flux must be varied in small steps only. Why?", "[7]"]
+      ]
+    },
+    {
+      "num": "Q.5",
+      "parts": [
+        ["(a)", "A 220 V, 24 A, 100 rpm, separately excited DC motor has an armature resistance of 2 ohm. Motor is controlled by chopper with frequency of 500 Hz and source voltage of 230 V. Calculate the duty ratio for 1.2 times rated torque and 500 rpm", "[7]"],
+        ["(b)", "Explain Why a DC series motor is more suitable to deal with torque over loads than other DC motor?", "[7]"]
+      ]
+    },
+    {
+      "num": "Q.6",
+      "parts": [
+        ["(a)", "Account on voltage source inverter fed induction motor drives along with its limitations.", "[7]"],
+        ["(b)", "A three phase star connected, 50Hz, 4pole induction motor has the following parameters in ohms per phase referred to the stator. R<sub>s</sub>=R<sub>r</sub>'=0.034 and X<sub>s</sub>=X<sub>r</sub>'=0.18. If the rated slip is 4%, then determine the motor speed for rated torque and f=25Hz. The motor I controlled with a constant V/f ratio.", "[7]"]
+      ]
+    },
+    {
+      "num": "Q.7",
+      "parts": [
+        ["(a)", "Draw the speed torque and speed current characteristics for fixed V/f ratio of an induction motor by explaining the operation of V/f control.", "[7]"],
+        ["(b)", "With help of block diagram, explain the closed loop operation of slipped control PWM inverter drive with dynamic breaking.", "[7]"]
+      ]
+    },
+    {
+      "num": "Q.8",
+      "parts": [
+        ["(a)", "What is slip power recovery scheme and describe Scherbius static drive in detail?", "[7]"],
+        ["(b)", "Explain the different methods of speed control used in three phase induction motors.", "[7]"]
+      ]
+    },
+    {
+      "num": "Q.9",
+      "parts": [
+        ["(a)", "Explain the operating principle of vector-controlled induction motor drives.", "[7]"],
+        ["(b)", "Draw the power circuit arrangement of three phase variable frequency inverter for the speed control of three phase induction motor and explain its working", "[7]"]
+      ]
+    }
+  ]
+}

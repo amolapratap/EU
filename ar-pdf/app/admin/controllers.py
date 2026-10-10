@@ -4,7 +4,7 @@ import fitz
 import math
 import io
 
-ALPHA_URL = "https://alpharesult.in"
+ALPHA_URL = "https://play.google.com/store/apps/details?id=in.alpharesult.app"
 LOGO_PATH = "app/assets/ar_logo_bg-free.png"
 
 
@@ -150,7 +150,7 @@ def add_alpharesult_header(page):
         ("Telegram", "https://t.me/alpha_result"),
         ("LinkedIn", "https://www.linkedin.com/company/alpharesult"),
         ("Email", "mailto:alpharesult@gmail.com"),
-        ("Website", "https://alpharesult.in"),
+        ("Website", ALPHA_URL),
     ]
 
     start_x = 80
@@ -198,7 +198,7 @@ def watermark_digital_page(page):
         page.rect.width,
         page.rect.height
     ),
-        "uri": "https://alpharesult.in"
+        "uri": ALPHA_URL
     })
 
     # # 2️⃣ LOGO (VERY LIGHT, UPPER AREA)
@@ -273,11 +273,11 @@ def process_pdf(input_pdf_path: str, output_pdf_path: str):
 
             new_page.insert_image(new_page.rect, stream=img_bytes)
 
-            # 🔗 CLICK ANYWHERE → alpharesult.in
+            # 🔗 CLICK ANYWHERE → Alpha Result App
             new_page.insert_link({
                 "kind": fitz.LINK_URI,
                 "from": new_page.rect,
-                "uri": "https://alpharesult.in"
+                "uri": ALPHA_URL
             })
 
 

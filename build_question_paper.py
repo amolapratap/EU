@@ -1,4 +1,6 @@
 import os
+import sys
+import json
 import fitz  # PyMuPDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -67,10 +69,177 @@ def create_divider_ornament(width=240, height=14):
     return d
 
 
-def generate_exam_paper(output_path="Bihar_Engineering_University_Electrical_Drives_2024.pdf"):
-    # Page setup: A4 with 32pt margins
-    # Printable width: 595.27 - 64 = 531.27 pt
-    # Printable height: 841.89 - 60 = 781.89 pt
+# Default paper data (Electrical Drives, 2024)
+DEFAULT_PAPER_DATA = {
+    "university": "Bihar Engineering University, Patna",
+    "examination": "B.Tech 6<sup>th</sup> Semester Examination, 2024",
+    "course": "B.Tech",
+    "subject": "Electrical Drives",
+    "code": "100613",
+    "time": "03 Hours",
+    "full_marks": "70",
+    "instructions": [
+        "(i) The marks are indicated in the right-hand margin.",
+        "(ii) There are <b>NINE</b> questions in this paper.",
+        "(iii) Attempt <b>FIVE</b> questions in all.",
+        "(iv) Question No. <b>1</b> is compulsory."
+    ],
+    "q1": {
+        "heading": "Choose the correct answer the following (Any seven question only):",
+        "marks": "[2 x 7 = 14]",
+        "page1_mcqs": [
+            {
+                "id": "(a)",
+                "question": "The consideration involved in the selection of the type of electric drive for a particular application depends upon",
+                "options": [
+                    ["(i)", "Speed control range and its nature", "(iii)", "Starting Nature"],
+                    ["(ii)", "Environmental condition", "(iv)", "All of the above"]
+                ]
+            },
+            {
+                "id": "(b)",
+                "question": "The consideration involved in the selection of the type of electric drive for the Load Variation application depends upon",
+                "options": [
+                    ["(i)", "Constant Load", "(iii)", "Pulsating Load"],
+                    ["(ii)", "Continuous Variable Load", "(iv)", "All of the above"]
+                ]
+            },
+            {
+                "id": "(c)",
+                "question": "Which type of drive can be used for Minning Process?",
+                "options": [
+                    ["(i)", "DC Motor with Ward Leonard Speed control", "(iii)", "Slip Ring Induction Motor"],
+                    ["(ii)", "Double Squirrel cage Induction Motor", "(iv)", "All of the above"]
+                ]
+            },
+            {
+                "id": "(d)",
+                "question": "For an application which requires smooth and precise speed control over the wide range, the motor is preferred is",
+                "options": [
+                    ["(i)", "Squirrel cage Induction Motor", "(iii)", "DC motor"],
+                    ["(ii)", "Synchronous Motor", "(iv)", "Wound Rotor Induction Motor"]
+                ]
+            },
+            {
+                "id": "(e)",
+                "question": "If the current in the armature of d.c series motor is reduced to 5%, the torque of the motor will become:",
+                "options": [
+                    ["(i)", "50% of the Previous Value", "(iii)", "150% of the Previous Value"],
+                    ["(ii)", "25% of the Previous Value", "(iv)", "100% of the Previous Value"]
+                ]
+            },
+            {
+                "id": "(f)",
+                "question": "In case of a 3 phase induction motor, plugging is done by:",
+                "options": [
+                    ["(i)", "Starting the motor on load which is more than the rated load", "(iii)", "Interchanging connections of any two phases of the stator for quick stopping"],
+                    ["(ii)", "Pulling the motor directly on line without a starter", "(iv)", "Locking of the rotor due to harmonics"]
+                ]
+            },
+            {
+                "id": "(g)",
+                "question": "Which type of Motor is best suited for the excavator?",
+                "options": [
+                    ["(i)", "DC Shunt Motor", "(iii)", "DC series Motor"],
+                    ["(ii)", "Differential Motor", "(iv)", "DC series Motor"]
+                ]
+            },
+            {
+                "id": "(h)",
+                "question": "Belt conveyors offer",
+                "options": [
+                    ["(i)", "Zero starting torque", "(iii)", "Medium starting torque"],
+                    ["(ii)", "Low starting torque", "(iv)", "High starting torque"]
+                ]
+            },
+            {
+                "id": "(i)",
+                "question": "The traveling speed of the crane varies from",
+                "options": [
+                    ["(i)", "1 to 2.5 m/s", "(iii)", "10 to 20 m/s"],
+                    ["(ii)", "5 to 10 m/s", "(iv)", "25 to 40 m/s"]
+                ]
+            }
+        ],
+        "page2_mcqs": [
+            {
+                "id": "(j)",
+                "question": "Regenerative braking mode can be achieved in which quadrant (V-I curve)?",
+                "options": [
+                    ["(i)", "Third", "(iii)", "Fourth"],
+                    ["(ii)", "Second", "(iv)", "First"]
+                ]
+            }
+        ]
+    },
+    "long_questions": [
+        {
+            "num": "Q.2",
+            "parts": [
+                ["(a)", "Draw the schematic representation and equivalent circuit of a DC machine and derive the expression for induced emf and electromagnetic torque.", "[7]"],
+                ["(b)", "A 220 V, 500 A, 600 rpm separately excited motor has armature and field resistance of 0.02 and 10 ohm respectively. The load torque is given by the expression T<sub>L</sub> = 2000 - 2N, N-m, where N is the speed in rpm. Speeds below the rated are obtained by armature voltage control and depends above the rated are obtained by field control.<br/>i)&nbsp;&nbsp;Calculate motor terminal voltage and armature current when the speed is 450 rpm.<br/>ii)&nbsp;Calculate field winding voltage and armature current when the speed is 750 rpm. Assume the rated field voltage is the same as the rated armature voltage", "[7]"]
+            ]
+        },
+        {
+            "num": "Q.3",
+            "parts": [
+                ["(a)", "Draw the diagram and Derive the transfer function of a self excited DC motor load converter system Draw the diagram and Derive the transfer function of a self excited DC motor load converter system", "[7]"],
+                ["(b)", "Illustrate the use of inner current loop in closed loop speed control.", "[7]"]
+            ]
+        },
+        {
+            "num": "Q.4",
+            "parts": [
+                ["(a)", "Explain with neat sketch the chopper control method of speed control of DC Motors.", "[7]"],
+                ["(b)", "When varying speed by field flux control, flux must be varied in small steps only. Why?", "[7]"]
+            ]
+        },
+        {
+            "num": "Q.5",
+            "parts": [
+                ["(a)", "A 220 V, 24 A, 100 rpm, separately excited DC motor has an armature resistance of 2 ohm. Motor is controlled by chopper with frequency of 500 Hz and source voltage of 230 V. Calculate the duty ratio for 1.2 times rated torque and 500 rpm", "[7]"],
+                ["(b)", "Explain Why a DC series motor is more suitable to deal with torque over loads than other DC motor?", "[7]"]
+            ]
+        },
+        {
+            "num": "Q.6",
+            "parts": [
+                ["(a)", "Account on voltage source inverter fed induction motor drives along with its limitations.", "[7]"],
+                ["(b)", "A three phase star connected, 50Hz, 4pole induction motor has the following parameters in ohms per phase referred to the stator. R<sub>s</sub>=R<sub>r</sub>'=0.034 and X<sub>s</sub>=X<sub>r</sub>'=0.18. If the rated slip is 4%, then determine the motor speed for rated torque and f=25Hz. The motor I controlled with a constant V/f ratio.", "[7]"]
+            ]
+        },
+        {
+            "num": "Q.7",
+            "parts": [
+                ["(a)", "Draw the speed torque and speed current characteristics for fixed V/f ratio of an induction motor by explaining the operation of V/f control.", "[7]"],
+                ["(b)", "With help of block diagram, explain the closed loop operation of slipped control PWM inverter drive with dynamic breaking.", "[7]"]
+            ]
+        },
+        {
+            "num": "Q.8",
+            "parts": [
+                ["(a)", "What is slip power recovery scheme and describe Scherbius static drive in detail?", "[7]"],
+                ["(b)", "Explain the different methods of speed control used in three phase induction motors.", "[7]"]
+            ]
+        },
+        {
+            "num": "Q.9",
+            "parts": [
+                ["(a)", "Explain the operating principle of vector-controlled induction motor drives.", "[7]"],
+                ["(b)", "Draw the power circuit arrangement of three phase variable frequency inverter for the speed control of three phase induction motor and explain its working", "[7]"]
+            ]
+        }
+    ]
+}
+
+
+def generate_exam_paper(paper_data=None, output_path="Bihar_Engineering_University_Electrical_Drives_2024.pdf"):
+    """
+    Generates a high-quality 2-page PDF adhering to the Bihar Engineering University exam paper format.
+    """
+    if paper_data is None:
+        paper_data = DEFAULT_PAPER_DATA
+
     doc = SimpleDocTemplate(
         output_path,
         pagesize=A4,
@@ -216,20 +385,20 @@ def generate_exam_paper(output_path="Bihar_Engineering_University_Electrical_Dri
     story = []
 
     # ==================== PAGE 1 HEADER ====================
-    story.append(Paragraph("Bihar Engineering University, Patna", univ_title_style))
-    story.append(Paragraph("B.Tech 6<sup>th</sup> Semester Examination, 2024", exam_title_style))
+    story.append(Paragraph(paper_data.get("university", "Bihar Engineering University, Patna"), univ_title_style))
+    story.append(Paragraph(paper_data.get("examination", "B.Tech Examination"), exam_title_style))
 
     # Meta Table (Course, Subject, Time, Code, Full Marks)
     meta_table_data = [
         [
-            Paragraph("Course : B.Tech", meta_left_style),
-            Paragraph("Subject: Electrical Drives", meta_center_style),
-            Paragraph("Time: 03 Hours", meta_right_style)
+            Paragraph(f"Course : {paper_data.get('course', 'B.Tech')}", meta_left_style),
+            Paragraph(f"Subject: {paper_data.get('subject', '')}", meta_center_style),
+            Paragraph(f"Time: {paper_data.get('time', '03 Hours')}", meta_right_style)
         ],
         [
-            Paragraph("Code : 100613", meta_left_style),
+            Paragraph(f"Code : {paper_data.get('code', '')}", meta_left_style),
             Paragraph("", meta_center_style),
-            Paragraph("Full Marks: 70", meta_right_style)
+            Paragraph(f"Full Marks: {paper_data.get('full_marks', '70')}", meta_right_style)
         ]
     ]
     meta_table = Table(meta_table_data, colWidths=[125, 281, 125])
@@ -247,23 +416,18 @@ def generate_exam_paper(output_path="Bihar_Engineering_University_Electrical_Dri
 
     # Instructions
     story.append(Paragraph("Instructions:-", inst_heading_style))
-    instructions = [
-        "(i) The marks are indicated in the right-hand margin.",
-        "(ii) There are <b>NINE</b> questions in this paper.",
-        "(iii) Attempt <b>FIVE</b> questions in all.",
-        "(iv) Question No. <b>1</b> is compulsory."
-    ]
-    for inst in instructions:
+    for inst in paper_data.get("instructions", []):
         story.append(Paragraph(inst, inst_item_style))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.black, spaceBefore=3, spaceAfter=5))
 
     # Q.1 Header Row
+    q1_info = paper_data.get("q1", {})
     q1_hdr_data = [
         [
             Paragraph("Q.1", q1_hdr_label),
-            Paragraph("Choose the correct answer the following (Any seven question only):", q1_hdr_text),
-            Paragraph("[2 x 7 = 14]", q1_hdr_marks)
+            Paragraph(q1_info.get("heading", "Choose the correct answer the following (Any seven question only):"), q1_hdr_text),
+            Paragraph(q1_info.get("marks", "[2 x 7 = 14]"), q1_hdr_marks)
         ]
     ]
     q1_hdr_table = Table(q1_hdr_data, colWidths=[24, 432, 75])
@@ -276,85 +440,11 @@ def generate_exam_paper(output_path="Bihar_Engineering_University_Electrical_Dri
     ]))
     story.append(q1_hdr_table)
 
-    # Page 1 MCQs: (a) through (i)
-    page1_mcqs = [
-        {
-            "id": "(a)",
-            "q": "The consideration involved in the selection of the type of electric drive for a particular application depends upon",
-            "opts": [
-                ("(i)", "Speed control range and its nature", "(iii)", "Starting Nature"),
-                ("(ii)", "Environmental condition", "(iv)", "All of the above")
-            ]
-        },
-        {
-            "id": "(b)",
-            "q": "The consideration involved in the selection of the type of electric drive for the Load Variation application depends upon",
-            "opts": [
-                ("(i)", "Constant Load", "(iii)", "Pulsating Load"),
-                ("(ii)", "Continuous Variable Load", "(iv)", "All of the above")
-            ]
-        },
-        {
-            "id": "(c)",
-            "q": "Which type of drive can be used for Minning Process?",
-            "opts": [
-                ("(i)", "DC Motor with Ward Leonard Speed control", "(iii)", "Slip Ring Induction Motor"),
-                ("(ii)", "Double Squirrel cage Induction Motor", "(iv)", "All of the above")
-            ]
-        },
-        {
-            "id": "(d)",
-            "q": "For an application which requires smooth and precise speed control over the wide range, the motor is preferred is",
-            "opts": [
-                ("(i)", "Squirrel cage Induction Motor", "(iii)", "DC motor"),
-                ("(ii)", "Synchronous Motor", "(iv)", "Wound Rotor Induction Motor")
-            ]
-        },
-        {
-            "id": "(e)",
-            "q": "If the current in the armature of d.c series motor is reduced to 5%, the torque of the motor will become:",
-            "opts": [
-                ("(i)", "50% of the Previous Value", "(iii)", "150% of the Previous Value"),
-                ("(ii)", "25% of the Previous Value", "(iv)", "100% of the Previous Value")
-            ]
-        },
-        {
-            "id": "(f)",
-            "q": "In case of a 3 phase induction motor, plugging is done by:",
-            "opts": [
-                ("(i)", "Starting the motor on load which is more than the rated load", "(iii)", "Interchanging connections of any two phases of the stator for quick stopping"),
-                ("(ii)", "Pulling the motor directly on line without a starter", "(iv)", "Locking of the rotor due to harmonics")
-            ]
-        },
-        {
-            "id": "(g)",
-            "q": "Which type of Motor is best suited for the excavator?",
-            "opts": [
-                ("(i)", "DC Shunt Motor", "(iii)", "DC series Motor"),
-                ("(ii)", "Differential Motor", "(iv)", "DC series Motor")
-            ]
-        },
-        {
-            "id": "(h)",
-            "q": "Belt conveyors offer",
-            "opts": [
-                ("(i)", "Zero starting torque", "(iii)", "Medium starting torque"),
-                ("(ii)", "Low starting torque", "(iv)", "High starting torque")
-            ]
-        },
-        {
-            "id": "(i)",
-            "q": "The traveling speed of the crane varies from",
-            "opts": [
-                ("(i)", "1 to 2.5 m/s", "(iii)", "10 to 20 m/s"),
-                ("(ii)", "5 to 10 m/s", "(iv)", "25 to 40 m/s")
-            ]
-        }
-    ]
-
+    # Page 1 MCQs
+    page1_mcqs = q1_info.get("page1_mcqs", [])
     for item in page1_mcqs:
         opt_rows = []
-        for r in item["opts"]:
+        for r in item["options"]:
             opt_rows.append([
                 Paragraph(f"{r[0]}&nbsp;&nbsp;{r[1]}", mcq_opt_style),
                 Paragraph(f"{r[2]}&nbsp;&nbsp;{r[3]}", mcq_opt_style)
@@ -369,7 +459,7 @@ def generate_exam_paper(output_path="Bihar_Engineering_University_Electrical_Dri
         ]))
 
         q_table = Table([
-            [Paragraph(item["id"], mcq_num_style), Paragraph(item["q"], mcq_text_style)],
+            [Paragraph(item["id"], mcq_num_style), Paragraph(item["question"], mcq_text_style)],
             ['', opt_table]
         ], colWidths=[22, 509])
         q_table.setStyle(TableStyle([
@@ -386,103 +476,38 @@ def generate_exam_paper(output_path="Bihar_Engineering_University_Electrical_Dri
     story.append(PageBreak())
 
     # ==================== PAGE 2 ====================
-    # Item (j) at top of Page 2
-    item_j = {
-        "id": "(j)",
-        "q": "Regenerative braking mode can be achieved in which quadrant (V-I curve)?",
-        "opts": [
-            ("(i)", "Third", "(iii)", "Fourth"),
-            ("(ii)", "Second", "(iv)", "First")
-        ]
-    }
-    opt_rows_j = []
-    for r in item_j["opts"]:
-        opt_rows_j.append([
-            Paragraph(f"{r[0]}&nbsp;&nbsp;{r[1]}", mcq_opt_style),
-            Paragraph(f"{r[2]}&nbsp;&nbsp;{r[3]}", mcq_opt_style)
-        ])
-    opt_table_j = Table(opt_rows_j, colWidths=[255, 254])
-    opt_table_j.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('LEFTPADDING', (0,0), (-1,-1), 16),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('TOPPADDING', (0,0), (-1,-1), 1.2),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
-    ]))
-    q_table_j = Table([
-        [Paragraph(item_j["id"], mcq_num_style), Paragraph(item_j["q"], mcq_text_style)],
-        ['', opt_table_j]
-    ], colWidths=[22, 509])
-    q_table_j.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1),
-    ]))
-    story.append(q_table_j)
-    story.append(Spacer(1, 12))
+    page2_mcqs = q1_info.get("page2_mcqs", [])
+    for item_j in page2_mcqs:
+        opt_rows_j = []
+        for r in item_j["options"]:
+            opt_rows_j.append([
+                Paragraph(f"{r[0]}&nbsp;&nbsp;{r[1]}", mcq_opt_style),
+                Paragraph(f"{r[2]}&nbsp;&nbsp;{r[3]}", mcq_opt_style)
+            ])
+        opt_table_j = Table(opt_rows_j, colWidths=[255, 254])
+        opt_table_j.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 16),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 1.2),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
+        ]))
+        q_table_j = Table([
+            [Paragraph(item_j["id"], mcq_num_style), Paragraph(item_j["question"], mcq_text_style)],
+            ['', opt_table_j]
+        ], colWidths=[22, 509])
+        q_table_j.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+        ]))
+        story.append(q_table_j)
+        story.append(Spacer(1, 12))
 
     # Long Questions: Q.2 to Q.9
-    long_questions = [
-        {
-            "num": "Q.2",
-            "parts": [
-                ("(a)", "Draw the schematic representation and equivalent circuit of a DC machine and derive the expression for induced emf and electromagnetic torque.", "[7]"),
-                ("(b)", "A 220 V, 500 A, 600 rpm separately excited motor has armature and field resistance of 0.02 and 10 ohm respectively. The load torque is given by the expression T<sub>L</sub> = 2000 - 2N, N-m, where N is the speed in rpm. Speeds below the rated are obtained by armature voltage control and depends above the rated are obtained by field control.<br/>i)&nbsp;&nbsp;Calculate motor terminal voltage and armature current when the speed is 450 rpm.<br/>ii)&nbsp;Calculate field winding voltage and armature current when the speed is 750 rpm. Assume the rated field voltage is the same as the rated armature voltage", "[7]")
-            ]
-        },
-        {
-            "num": "Q.3",
-            "parts": [
-                ("(a)", "Draw the diagram and Derive the transfer function of a self excited DC motor load converter system Draw the diagram and Derive the transfer function of a self excited DC motor load converter system", "[7]"),
-                ("(b)", "Illustrate the use of inner current loop in closed loop speed control.", "[7]")
-            ]
-        },
-        {
-            "num": "Q.4",
-            "parts": [
-                ("(a)", "Explain with neat sketch the chopper control method of speed control of DC Motors.", "[7]"),
-                ("(b)", "When varying speed by field flux control, flux must be varied in small steps only. Why?", "[7]")
-            ]
-        },
-        {
-            "num": "Q.5",
-            "parts": [
-                ("(a)", "A 220 V, 24 A, 100 rpm, separately excited DC motor has an armature resistance of 2 ohm. Motor is controlled by chopper with frequency of 500 Hz and source voltage of 230 V. Calculate the duty ratio for 1.2 times rated torque and 500 rpm", "[7]"),
-                ("(b)", "Explain Why a DC series motor is more suitable to deal with torque over loads than other DC motor?", "[7]")
-            ]
-        },
-        {
-            "num": "Q.6",
-            "parts": [
-                ("(a)", "Account on voltage source inverter fed induction motor drives along with its limitations.", "[7]"),
-                ("(b)", "A three phase star connected, 50Hz, 4pole induction motor has the following parameters in ohms per phase referred to the stator. R<sub>s</sub>=R<sub>r</sub>'=0.034 and X<sub>s</sub>=X<sub>r</sub>'=0.18. If the rated slip is 4%, then determine the motor speed for rated torque and f=25Hz. The motor I controlled with a constant V/f ratio.", "[7]")
-            ]
-        },
-        {
-            "num": "Q.7",
-            "parts": [
-                ("(a)", "Draw the speed torque and speed current characteristics for fixed V/f ratio of an induction motor by explaining the operation of V/f control.", "[7]"),
-                ("(b)", "With help of block diagram, explain the closed loop operation of slipped control PWM inverter drive with dynamic breaking.", "[7]")
-            ]
-        },
-        {
-            "num": "Q.8",
-            "parts": [
-                ("(a)", "What is slip power recovery scheme and describe Scherbius static drive in detail?", "[7]"),
-                ("(b)", "Explain the different methods of speed control used in three phase induction motors.", "[7]")
-            ]
-        },
-        {
-            "num": "Q.9",
-            "parts": [
-                ("(a)", "Explain the operating principle of vector-controlled induction motor drives.", "[7]"),
-                ("(b)", "Draw the power circuit arrangement of three phase variable frequency inverter for the speed control of three phase induction motor and explain its working", "[7]")
-            ]
-        }
-    ]
-
+    long_questions = paper_data.get("long_questions", [])
     for q in long_questions:
         q_rows = []
         for idx, p in enumerate(q["parts"]):
@@ -518,5 +543,21 @@ def generate_exam_paper(output_path="Bihar_Engineering_University_Electrical_Dri
     doc.build(story, canvasmaker=UniversityExamCanvas)
     print(f"Successfully generated: {output_path}")
 
+
+def main():
+    if len(sys.argv) > 1:
+        json_file = sys.argv[1]
+        out_pdf = sys.argv[2] if len(sys.argv) > 2 else "Exam_Paper_Generated.pdf"
+        if not os.path.exists(json_file):
+            print(f"Error: JSON file '{json_file}' not found.")
+            sys.exit(1)
+        with open(json_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        generate_exam_paper(data, out_pdf)
+    else:
+        # Default run
+        generate_exam_paper()
+
+
 if __name__ == "__main__":
-    generate_exam_paper()
+    main()

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Query
+from fastapi import APIRouter, Depends, UploadFile, File, Query, Body
 from app.auth.dependencies import admin_required
 from app.auth.utils import get_current_admin
 from app.admin.controllers import *
@@ -282,6 +282,19 @@ async def upload_pdf(
         "public_id": result["public_id"]
         }
     }
+
+
+# Auto-generate university format PDF from DB questions and upload to Cloudinary
+@router.post("/papers/{paper_id}/generate-pdf")
+async def generate_paper_pdf_route(
+    paper_id: str,
+    with_watermark: bool = True,
+    body: dict | None = Body(default=None),
+    admin=Depends(get_current_admin)
+):
+    if body and "with_watermark" in body:
+        with_watermark = bool(body["with_watermark"])
+    return await generate_and_upload_paper_pdf(paper_id, admin, with_watermark=with_watermark)
 
 
 # To merge all papers of a subject
