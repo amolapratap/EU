@@ -100,13 +100,20 @@ export default function PyqDownloadPage() {
     const [loadingPapers, setLoadingPapers] = useState(false);
     const [activePaperIndex, setActivePaperIndex] = useState(0);
     const [latestPaperIndex, setLatestPaperIndex] = useState(0);
-    // TEMPORARY APP PROMO: state for pop-up when Android user clicks other years
+    // TEMPORARY APP PROMO: state for pop-up when user clicks other years
     const [promoYearPopup, setPromoYearPopup] = useState<string | null>(null);
 
-    const isAndroidDevice = () => {
-      if (typeof window === "undefined") return false;
+    const getDevicePlatform = (): "android" | "ios" | "desktop" => {
+      if (typeof window === "undefined") return "desktop";
       const ua = navigator.userAgent || navigator.vendor || (window as any).opera || "";
-      return /android/i.test(ua);
+      if (/android/i.test(ua)) return "android";
+      if (
+        /iPad|iPhone|iPod/i.test(ua) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+      ) {
+        return "ios";
+      }
+      return "desktop";
     };
 
     const handleViewPapers = async (subject: any) => {
@@ -1019,15 +1026,23 @@ function getPdfSourceType(url: string) {
  {s.all_paper_pdf && (
     <button
       onClick={() => {
-        // TEMPORARY APP PROMO: on Android only, show app popup & redirect to Play Store
-        if (isAndroidDevice() && papers.length > 0) {
+        // TEMPORARY APP PROMO:
+        // - Android: show popup + open Play Store, keep locked
+        // - Laptop (desktop): load All Years PDF in background + show popup + open Play Store in new tab
+        // - iPhone (ios): load All Years PDF in background + show popup (no auto new tab)
+        if (papers.length > 0) {
+          const platform = getDevicePlatform();
           setPromoYearPopup("All Years");
-          window.open(
-            "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
-            "_blank",
-            "noopener,noreferrer"
-          );
-          return;
+          if (platform !== "ios") {
+            window.open(
+              "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
+              "_blank",
+              "noopener,noreferrer"
+            );
+          }
+          if (platform === "android") {
+            return;
+          }
         }
         setActivePaperIndex(-1);
       }}
@@ -1053,15 +1068,23 @@ function getPdfSourceType(url: string) {
     >
       <button
         onClick={() => {
-          // TEMPORARY APP PROMO: on Android only, lock non-latest years and open App popup + Play Store
-          if (isAndroidDevice() && i !== latestPaperIndex) {
+          // TEMPORARY APP PROMO:
+          // - Android: lock non-latest years, show popup + open Play Store
+          // - Laptop (desktop): load clicked year PDF in background + show popup + open Play Store in new tab
+          // - iPhone (ios): load clicked year PDF in background + show popup (no auto new tab)
+          if (i !== latestPaperIndex) {
+            const platform = getDevicePlatform();
             setPromoYearPopup(String(p.year));
-            window.open(
-              "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
-              "_blank",
-              "noopener,noreferrer"
-            );
-            return;
+            if (platform !== "ios") {
+              window.open(
+                "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
+                "_blank",
+                "noopener,noreferrer"
+              );
+            }
+            if (platform === "android") {
+              return;
+            }
           }
           setActivePaperIndex(i);
         }}
