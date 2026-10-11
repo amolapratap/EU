@@ -98,7 +98,9 @@ export default function PyqDownloadPage() {
     const [activeSubjectCode, setActiveSubjectCode] = useState<string | null>(null);
     const [papers, setPapers] = useState<any[]>([]);
     const [loadingPapers, setLoadingPapers] = useState(false);
-    const [activePaperIndex, setActivePaperIndex] = useState(-1);
+    const [activePaperIndex, setActivePaperIndex] = useState(0);
+    // TEMPORARY APP PROMO: state for pop-up when user clicks other years
+    const [promoYearPopup, setPromoYearPopup] = useState<string | null>(null);
 
     const handleViewPapers = async (subject: any) => {
       // 🔁 TOGGLE CLOSE
@@ -110,13 +112,29 @@ export default function PyqDownloadPage() {
     
       setActiveSubjectCode(subject.code);
       setLoadingPapers(true);
-      setActivePaperIndex(-1); // ✅ RESET
+      setActivePaperIndex(0); // ✅ RESET TO LATEST YEAR
     
       try {
         const res = await apiGet(`/api/public/papers/${subject._id || subject.code}`);
-        setPapers(res.data || []);
+        const fetchedPapers = res.data || [];
+        setPapers(fetchedPapers);
+        if (fetchedPapers.length > 0) {
+          let latestIdx = 0;
+          let maxYear = Number(fetchedPapers[0]?.year) || 0;
+          fetchedPapers.forEach((p: any, idx: number) => {
+            const yr = Number(p?.year) || 0;
+            if (yr > maxYear) {
+              maxYear = yr;
+              latestIdx = idx;
+            }
+          });
+          setActivePaperIndex(latestIdx);
+        } else {
+          setActivePaperIndex(-1);
+        }
       } catch {
         setPapers([]);
+        setActivePaperIndex(-1);
       } finally {
         setLoadingPapers(false);
       }
@@ -413,6 +431,16 @@ function getPdfSourceType(url: string) {
     <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
       {/* Auto Pop-up for Alpha Result App */}
       <AppDownloadModal autoPop={true} delayMs={2500} />
+      {promoYearPopup && (
+        <AppDownloadModal
+          autoPop={false}
+          forceOpen={true}
+          onClose={() => setPromoYearPopup(null)}
+          customBadge="Available on Alpha Result App"
+          customTitle={`${promoYearPopup === "All Years" ? "All Years PYQs" : `${promoYearPopup} Question Paper`} Available on App!`}
+          customSubtitle={`Download the Alpha Result app from Google Play Store to view & download ${promoYearPopup === "All Years" ? "all previous years'" : promoYearPopup} question papers and solutions.`}
+        />
+      )}
 
       {/* HEADER */}
       <div className="text-center">
@@ -979,7 +1007,19 @@ function getPdfSourceType(url: string) {
  {/* ALL YEARS BUTTON */}
  {s.all_paper_pdf && (
     <button
-      onClick={() => setActivePaperIndex(-1)}
+      onClick={() => {
+        // TEMPORARY APP PROMO: show app download popup & auto redirect to Play Store
+        if (papers.length > 0) {
+          setPromoYearPopup("All Years");
+          window.open(
+            "https://play.google.com/store/apps/details?id=in.alpharesult.app",
+            "_blank",
+            "noopener,noreferrer"
+          );
+          return;
+        }
+        setActivePaperIndex(-1);
+      }}
       className={`px-3 py-1.5 rounded-md text-sm border transition
         ${
           activePaperIndex === -1
@@ -1001,7 +1041,19 @@ function getPdfSourceType(url: string) {
         }`}
     >
       <button
-        onClick={() => setActivePaperIndex(i)}
+        onClick={() => {
+          // TEMPORARY APP PROMO: only latest year is viewable on web; other years open App popup & redirect to Play Store
+          if (i !== activePaperIndex) {
+            setPromoYearPopup(String(p.year));
+            window.open(
+              "https://play.google.com/store/apps/details?id=in.alpharesult.app",
+              "_blank",
+              "noopener,noreferrer"
+            );
+            return;
+          }
+          setActivePaperIndex(i);
+        }}
         className={`px-3 py-1.5 text-sm transition
           ${
             i === activePaperIndex

@@ -11,6 +11,9 @@ type AppDownloadModalProps = {
   sessionKey?: string;
   forceOpen?: boolean;
   onClose?: () => void;
+  customBadge?: string;
+  customTitle?: string;
+  customSubtitle?: string;
 };
 
 export default function AppDownloadModal({
@@ -19,6 +22,9 @@ export default function AppDownloadModal({
   sessionKey = "alpharesult_app_modal_dismissed",
   forceOpen,
   onClose,
+  customBadge,
+  customTitle,
+  customSubtitle,
 }: AppDownloadModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -58,7 +64,10 @@ export default function AppDownloadModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+    <div
+      onClick={handleClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
+    >
       <div
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-indigo-100 transform transition-all animate-scale-up"
         onClick={(e) => e.stopPropagation()}
@@ -81,7 +90,7 @@ export default function AppDownloadModal({
           {/* Release Badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-[11px] font-semibold tracking-wide uppercase text-indigo-100 mb-3">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            Official App Released!
+            {customBadge || "Official App Released!"}
           </div>
 
           {/* App Icon + Title */}
@@ -97,10 +106,11 @@ export default function AppDownloadModal({
               />
             </div>
             <h3 className="text-xl font-bold text-white tracking-tight">
-              Alpha Result Android App
+              {customTitle || "Alpha Result Android App"}
             </h3>
             <p className="text-xs text-indigo-100 mt-1 max-w-xs">
-              Install now for faster PYQ downloads, offline view, and instant exam alerts!
+              {customSubtitle ||
+                "Install now for faster PYQ downloads, offline view, and instant exam alerts!"}
             </p>
           </div>
         </div>
@@ -111,8 +121,8 @@ export default function AppDownloadModal({
             <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
               <Zap className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-semibold text-slate-800">1-Tap Downloads</p>
-                <p className="text-[11px] text-slate-500">Fast & direct PDF access</p>
+                <p className="text-xs font-semibold text-slate-800">All Years PYQs</p>
+                <p className="text-[11px] text-slate-500">Past 5+ years with solutions</p>
               </div>
             </div>
 
@@ -136,7 +146,7 @@ export default function AppDownloadModal({
               <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-slate-800">100% Free</p>
-                <p className="text-[11px] text-slate-500">No ads or paywalls</p>
+                <p className="text-[11px] text-slate-500">Built for BEU Students</p>
               </div>
             </div>
           </div>
@@ -144,7 +154,15 @@ export default function AppDownloadModal({
           {/* Primary Action: Google Play Button */}
           <div className="pt-2 text-center flex flex-col items-center">
             <GooglePlayButton size="lg" className="w-full justify-center shadow-lg" />
-            <span className="text-[11px] text-slate-400 mt-2 font-medium">
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline underline-offset-2"
+            >
+              Download from Play Store →
+            </a>
+            <span className="text-[11px] text-slate-400 mt-1.5 font-medium">
               Requires Android 6.0+ • Free on Google Play Store
             </span>
           </div>
