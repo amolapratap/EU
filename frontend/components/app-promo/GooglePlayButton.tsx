@@ -30,7 +30,7 @@ export function GooglePlayIcon({ className = "w-6 h-6" }: { className?: string }
 }
 
 export const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=in.alpharesult.app";
+  "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dalpharesult_web";
 
 type GooglePlayButtonProps = {
   className?: string;

@@ -99,8 +99,15 @@ export default function PyqDownloadPage() {
     const [papers, setPapers] = useState<any[]>([]);
     const [loadingPapers, setLoadingPapers] = useState(false);
     const [activePaperIndex, setActivePaperIndex] = useState(0);
-    // TEMPORARY APP PROMO: state for pop-up when user clicks other years
+    const [latestPaperIndex, setLatestPaperIndex] = useState(0);
+    // TEMPORARY APP PROMO: state for pop-up when Android user clicks other years
     const [promoYearPopup, setPromoYearPopup] = useState<string | null>(null);
+
+    const isAndroidDevice = () => {
+      if (typeof window === "undefined") return false;
+      const ua = navigator.userAgent || navigator.vendor || (window as any).opera || "";
+      return /android/i.test(ua);
+    };
 
     const handleViewPapers = async (subject: any) => {
       // 🔁 TOGGLE CLOSE
@@ -113,6 +120,7 @@ export default function PyqDownloadPage() {
       setActiveSubjectCode(subject.code);
       setLoadingPapers(true);
       setActivePaperIndex(0); // ✅ RESET TO LATEST YEAR
+      setLatestPaperIndex(0);
     
       try {
         const res = await apiGet(`/api/public/papers/${subject._id || subject.code}`);
@@ -129,12 +137,15 @@ export default function PyqDownloadPage() {
             }
           });
           setActivePaperIndex(latestIdx);
+          setLatestPaperIndex(latestIdx);
         } else {
           setActivePaperIndex(-1);
+          setLatestPaperIndex(-1);
         }
       } catch {
         setPapers([]);
         setActivePaperIndex(-1);
+        setLatestPaperIndex(-1);
       } finally {
         setLoadingPapers(false);
       }
@@ -1008,11 +1019,11 @@ function getPdfSourceType(url: string) {
  {s.all_paper_pdf && (
     <button
       onClick={() => {
-        // TEMPORARY APP PROMO: show app download popup & auto redirect to Play Store
-        if (papers.length > 0) {
+        // TEMPORARY APP PROMO: on Android only, show app popup & redirect to Play Store
+        if (isAndroidDevice() && papers.length > 0) {
           setPromoYearPopup("All Years");
           window.open(
-            "https://play.google.com/store/apps/details?id=in.alpharesult.app",
+            "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
             "_blank",
             "noopener,noreferrer"
           );
@@ -1042,11 +1053,11 @@ function getPdfSourceType(url: string) {
     >
       <button
         onClick={() => {
-          // TEMPORARY APP PROMO: only latest year is viewable on web; other years open App popup & redirect to Play Store
-          if (i !== activePaperIndex) {
+          // TEMPORARY APP PROMO: on Android only, lock non-latest years and open App popup + Play Store
+          if (isAndroidDevice() && i !== latestPaperIndex) {
             setPromoYearPopup(String(p.year));
             window.open(
-              "https://play.google.com/store/apps/details?id=in.alpharesult.app",
+              "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
               "_blank",
               "noopener,noreferrer"
             );
