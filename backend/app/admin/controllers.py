@@ -371,9 +371,13 @@ async def create_paper(body: dict, admin):
             detail="Subject not found for the provided subject_id or subject_code"
         )
 
+    subject_code_val = str(body.get("subject_code") or "").strip()
+    if not subject_code_val:
+        subject_code_val = subject.get("code", subject_code)
+
     doc = {
         "subject_id": subject["_id"],
-        "subject_code": subject.get("code", subject_code),
+        "subject_code": subject_code_val,
         "name": body["name"],
         "type": body["type"],          # exam_type => MID / END / QUIZ / PRACTICE
         "paper_type": body.get("paper_type"),
@@ -439,6 +443,14 @@ async def update_paper(paper_id: str, body: dict, admin):
         "paper_pdf": body.get("paper_pdf", ""),
         "updated_at": utcnow(),
     }
+
+    if "paper_type" in body:
+        update_data["paper_type"] = body["paper_type"]
+
+    if "subject_code" in body and body["subject_code"] is not None:
+        sc = str(body["subject_code"]).strip()
+        if sc:
+            update_data["subject_code"] = sc
 
     # If subject_id is supplied, update the relationship to the new subject.
     # Note: paper.subject_code is intentionally NOT modified (remains as historical snapshot).

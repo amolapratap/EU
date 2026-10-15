@@ -242,18 +242,18 @@ export default function AdminStructurePage() {
   if (!user || (user.role !== "admin" && user.role !== "superalpha")) return null;
 
   return (
-    <div className="min-h-screen bg-[#080B14] text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen bg-[#080B14] text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200 w-full max-w-full overflow-x-hidden">
       {/* BACKGROUND GLOW */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden w-full max-w-full">
         <div className="absolute -top-40 right-1/4 h-[500px] w-[500px] rounded-full bg-indigo-600/10 blur-[130px]" />
         <div className="absolute top-1/3 -left-40 h-[450px] w-[450px] rounded-full bg-purple-600/10 blur-[120px]" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 w-full max-w-full">
         {/* ================= TOP NAV & HEADER ================= */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800/80 pb-5 sm:pb-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Link
                 href="/admin"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 bg-slate-900/80 hover:bg-slate-800 hover:text-white border border-slate-800 transition"
@@ -298,10 +298,10 @@ export default function AdminStructurePage() {
         </div>
 
         {/* ================= TABS SWITCHER ================= */}
-        <div className="flex flex-wrap items-center gap-2.5 bg-slate-900/60 backdrop-blur-md p-1.5 rounded-2xl border border-slate-800 shadow-xl">
+        <div className="flex items-center gap-2 overflow-x-auto p-1.5 rounded-2xl bg-slate-900/60 backdrop-blur-md border border-slate-800 shadow-xl w-full max-w-full scrollbar-none sm:flex-wrap">
           <button
             onClick={() => setActiveTab("semester")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === "semester"
                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/30"
                 : "text-slate-400 hover:text-white hover:bg-slate-800/60"
@@ -318,7 +318,7 @@ export default function AdminStructurePage() {
 
           <button
             onClick={() => setActiveTab("branch")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === "branch"
                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/30"
                 : "text-slate-400 hover:text-white hover:bg-slate-800/60"
@@ -335,7 +335,7 @@ export default function AdminStructurePage() {
 
           <button
             onClick={() => setActiveTab("subject")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === "subject"
                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/30"
                 : "text-slate-400 hover:text-white hover:bg-slate-800/60"
@@ -352,7 +352,7 @@ export default function AdminStructurePage() {
 
           <button
             onClick={() => setActiveTab("elective")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === "elective"
                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/30"
                 : "text-slate-400 hover:text-white hover:bg-slate-800/60"
@@ -443,7 +443,7 @@ function SemesterSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
   }, [list, search]);
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-6 space-y-6">
+    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-4 sm:p-6 space-y-5 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* SECTION HEADER & CONTROLS */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div>
@@ -454,8 +454,8 @@ function SemesterSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
           <p className="text-xs text-slate-400">Total {list.length} semesters registered in system</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64 min-w-0 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
             <input
               id="ssb-search-input"
@@ -488,7 +488,7 @@ function SemesterSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
               setEdit(null);
               setOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0 w-full sm:w-auto"
           >
             <Plus size={14} />
             <span>Add Semester</span>
@@ -509,8 +509,8 @@ function SemesterSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
           <p className="text-xs text-slate-500">Click &quot;Add Semester&quot; above to create one.</p>
         </div>
       ) : (
-        <div className="border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full min-w-[500px] text-left border-collapse text-xs">
             <thead className="bg-[#0C1222] border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
               <tr>
                 <th className="py-3 px-4 w-32">Semester Code</th>
@@ -641,7 +641,7 @@ function BranchSection({ onCountChange, refreshTrigger }: { onCountChange: (c: n
   }, [list, search]);
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-6 space-y-6">
+    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-4 sm:p-6 space-y-5 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* SECTION HEADER & CONTROLS */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div>
@@ -652,8 +652,8 @@ function BranchSection({ onCountChange, refreshTrigger }: { onCountChange: (c: n
           <p className="text-xs text-slate-400">Total {list.length} branches registered in system</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64 min-w-0 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
             <input
               id="ssb-search-input"
@@ -686,7 +686,7 @@ function BranchSection({ onCountChange, refreshTrigger }: { onCountChange: (c: n
               setEdit(null);
               setOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0 w-full sm:w-auto"
           >
             <Plus size={14} />
             <span>Add Branch</span>
@@ -707,8 +707,8 @@ function BranchSection({ onCountChange, refreshTrigger }: { onCountChange: (c: n
           <p className="text-xs text-slate-500">Click &quot;Add Branch&quot; above to create one.</p>
         </div>
       ) : (
-        <div className="border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full min-w-[600px] text-left border-collapse text-xs">
             <thead className="bg-[#0C1222] border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
               <tr>
                 <th className="py-3 px-4 w-28">Code</th>
@@ -929,7 +929,7 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
   }, [subjects, search]);
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-6 space-y-6">
+    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-4 sm:p-6 space-y-5 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* SECTION HEADER & CONTROLS */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div>
@@ -945,7 +945,7 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
             setEdit(null);
             setOpen(true);
           }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0 self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0 w-full sm:w-auto"
         >
           <Plus size={14} />
           <span>Add Subject</span>
@@ -953,11 +953,11 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
       </div>
 
       {/* FILTER & SEARCH BAR */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 w-full">
         <select
           value={filterSem}
           onChange={e => setFilterSem(e.target.value)}
-          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer w-full"
         >
           <option value="">All Semesters</option>
           {semesters.map(s => (
@@ -970,7 +970,7 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
         <select
           value={filterBranch}
           onChange={e => setFilterBranch(e.target.value)}
-          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer w-full"
         >
           <option value="">All Branches</option>
           {branches.map(b => (
@@ -980,7 +980,7 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
           ))}
         </select>
 
-        <div className="relative sm:col-span-2">
+        <div className="relative sm:col-span-2 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
           <input
             id="ssb-search-input"
@@ -1041,8 +1041,8 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
           <p className="text-xs text-slate-500">Try adjusting your filters or click &quot;Add Subject&quot; above.</p>
         </div>
       ) : (
-        <div className="border border-slate-800 rounded-xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full min-w-[850px] text-left border-collapse text-xs">
             <thead className="bg-[#0C1222] border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
               <tr>
                 <th className="py-3 px-4">Subject</th>
@@ -1234,7 +1234,7 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
                     {isSelectedForSyllabus && (
                       <tr>
                         <td colSpan={8} className="p-0 border-t-0">
-                          <div className="bg-[#0A0F1E] border-y border-purple-500/30 p-6 animate-fade-in shadow-inner">
+                          <div className="bg-[#0A0F1E] border-y border-purple-500/30 p-3 sm:p-6 animate-fade-in shadow-inner w-full max-w-full overflow-x-hidden">
                             <InlineSyllabusEditor
                               subject={s}
                               onSaved={() => {
@@ -1374,7 +1374,7 @@ function ElectiveSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
   }, [electives, search]);
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-6 space-y-6">
+    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 shadow-xl p-4 sm:p-6 space-y-5 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* SECTION HEADER & CONTROLS */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div>
@@ -1390,7 +1390,7 @@ function ElectiveSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
             setEdit(null);
             setOpen(true);
           }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0 self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition active:scale-95 cursor-pointer shrink-0 w-full sm:w-auto"
         >
           <Plus size={14} />
           <span>Add Elective Group</span>
@@ -1398,11 +1398,11 @@ function ElectiveSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
       </div>
 
       {/* FILTERS */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 w-full">
         <select
           value={filterSem}
           onChange={e => setFilterSem(e.target.value)}
-          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer w-full"
         >
           <option value="">All Semesters</option>
           {semesters.map(s => (
@@ -1415,7 +1415,7 @@ function ElectiveSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
         <select
           value={filterBranch}
           onChange={e => setFilterBranch(e.target.value)}
-          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+          className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer w-full"
         >
           <option value="">All Branches</option>
           {branches.map(b => (
@@ -1425,7 +1425,7 @@ function ElectiveSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
           ))}
         </select>
 
-        <div className="relative sm:col-span-2">
+        <div className="relative sm:col-span-2 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
           <input
             id="ssb-search-input"
@@ -1467,8 +1467,8 @@ function ElectiveSection({ onCountChange, refreshTrigger }: { onCountChange: (c:
           <p className="text-xs text-slate-500">Click &quot;Add Elective Group&quot; above to create one.</p>
         </div>
       ) : (
-        <div className="border border-slate-800 rounded-xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full min-w-[750px] text-left border-collapse text-xs">
             <thead className="bg-[#0C1222] border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
               <tr>
                 <th className="py-3 px-4 w-28">Group Code</th>
@@ -1710,7 +1710,7 @@ function InlineSyllabusEditor({
               </span>
 
               <input
-                className="flex-1 bg-[#080D1A] border border-slate-700/80 text-white font-semibold text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-slate-500"
+                className="flex-1 min-w-0 bg-[#080D1A] border border-slate-700/80 text-white font-semibold text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-slate-500"
                 placeholder="Module / Unit Title (e.g. Asymptotic Notation and Divide & Conquer)"
                 value={u.unit}
                 onChange={e => updateUnit(ui, e.target.value)}
@@ -1734,9 +1734,9 @@ function InlineSyllabusEditor({
 
               {u.topics.map((t, ti) => (
                 <div key={ti} className="flex items-center gap-2">
-                  <span className="text-purple-400 font-mono text-xs select-none">•</span>
+                  <span className="text-purple-400 font-mono text-xs select-none shrink-0">•</span>
                   <input
-                    className="flex-1 bg-[#080D1A] border border-slate-800 text-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-slate-600"
+                    className="flex-1 min-w-0 bg-[#080D1A] border border-slate-800 text-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-slate-600"
                     placeholder={`Topic #${ti + 1}`}
                     value={t}
                     onChange={e => updateTopic(ui, ti, e.target.value)}
@@ -1744,7 +1744,7 @@ function InlineSyllabusEditor({
                   <button
                     type="button"
                     onClick={() => removeTopic(ui, ti)}
-                    className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-rose-500/10 transition cursor-pointer"
+                    className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-rose-500/10 transition cursor-pointer shrink-0"
                     title="Remove topic"
                   >
                     <X size={13} />
@@ -1776,11 +1776,11 @@ function InlineSyllabusEditor({
           <span>Add Another Module</span>
         </button>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-700/80 transition cursor-pointer"
+            className="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-700/80 transition cursor-pointer text-center"
           >
             Cancel
           </button>
@@ -1789,7 +1789,7 @@ function InlineSyllabusEditor({
             type="button"
             onClick={submit}
             disabled={saving}
-            className="inline-flex items-center justify-center gap-2 px-6 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/20 border border-purple-400/30 transition disabled:opacity-50 active:scale-95 cursor-pointer"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-6 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/20 border border-purple-400/30 transition disabled:opacity-50 active:scale-95 cursor-pointer text-center"
           >
             {saving ? (
               <>

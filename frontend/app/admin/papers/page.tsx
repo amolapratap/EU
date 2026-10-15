@@ -78,6 +78,7 @@ interface Paper {
   year: number;
   description?: string;
   paper_pdf?: string;
+  subject_code?: string;
 }
 
 /* ================= AUTH HELPER ================= */
@@ -576,6 +577,7 @@ export default function AdminPapersPage() {
         String(p.year)?.includes(q) ||
         p.type?.toLowerCase().includes(q) ||
         p.paper_type?.toLowerCase().includes(q) ||
+        p.subject_code?.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q)
     );
   }, [papers, searchQuery]);
@@ -919,9 +921,19 @@ export default function AdminPapersPage() {
                                   className="text-indigo-400/70 group-hover/link:text-indigo-200 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform shrink-0"
                                 />
                               </a>
-                              <p className="text-[11px] text-slate-500 font-mono">
-                                ID: {p._id.slice(-6)}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-[11px] text-slate-500 font-mono">
+                                  ID: {p._id.slice(-6)}
+                                </p>
+                                {p.subject_code && (
+                                  <span
+                                    title="Paper Subject Code"
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20"
+                                  >
+                                    Code: {p.subject_code}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </td>
 
@@ -1498,6 +1510,7 @@ export default function AdminPapersPage() {
         {open && (
           <PaperModal
             subject={subject}
+            subjectCode={currentSubjectObj?.code || ""}
             data={edit}
             onClose={() => setOpen(false)}
             onSaved={fetchPapers}
@@ -1510,8 +1523,21 @@ export default function AdminPapersPage() {
 
 /* ================= MODERN MODAL ================= */
 
-function PaperModal({ subject, data, onClose, onSaved }: any) {
+function PaperModal({
+  subject,
+  subjectCode = "",
+  data,
+  onClose,
+  onSaved,
+}: {
+  subject: string;
+  subjectCode?: string;
+  data: Paper | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const [name, setName] = useState(data?.name || "");
+  const [paperCode, setPaperCode] = useState(data?.subject_code || subjectCode || "");
   const [type, setType] = useState(data?.type || "END-SEM");
   const [paper_type, setpaper_type] = useState(data?.paper_type || "regular");
   const [year, setYear] = useState<number>(data?.year || new Date().getFullYear());
@@ -1544,6 +1570,7 @@ function PaperModal({ subject, data, onClose, onSaved }: any) {
         },
         body: JSON.stringify({
           subject_id: subject,
+          subject_code: paperCode.trim() || subjectCode || "",
           name: name.trim(),
           type,
           paper_type,
@@ -1645,6 +1672,51 @@ function PaperModal({ subject, data, onClose, onSaved }: any) {
             />
           </div>
 
+          {/* PAPER CODE & YEAR */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-slate-300">
+                  Paper Code
+                </label>
+                {subjectCode && paperCode !== subjectCode && (
+                  <button
+                    type="button"
+                    onClick={() => setPaperCode(subjectCode)}
+                    className="text-[10px] text-indigo-400 hover:text-indigo-300 underline underline-offset-1"
+                    title={`Reset to subject default: ${subjectCode}`}
+                  >
+                    Reset ({subjectCode})
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder={subjectCode || "e.g. CS401"}
+                value={paperCode}
+                onChange={e => setPaperCode(e.target.value)}
+                className="w-full bg-[#080D1A] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition font-mono uppercase"
+              />
+              <p className="text-[10px] text-slate-500">
+                Default: {subjectCode || "subject code"}. Editable per paper.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-300">
+                Exam Year <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="number"
+                min={2000}
+                max={2035}
+                value={year}
+                onChange={e => setYear(+e.target.value)}
+                className="w-full bg-[#080D1A] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
+              />
+            </div>
+          </div>
+
           {/* DUAL SELECT: EXAM TYPE & PAPER TYPE */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -1674,21 +1746,6 @@ function PaperModal({ subject, data, onClose, onSaved }: any) {
                 <option value="Supplementary">Supplementary</option>
               </select>
             </div>
-          </div>
-
-          {/* YEAR */}
-          <div className="space-y-1">
-            <label className="font-semibold text-slate-300">
-              Exam Year <span className="text-rose-400">*</span>
-            </label>
-            <input
-              type="number"
-              min={2000}
-              max={2035}
-              value={year}
-              onChange={e => setYear(+e.target.value)}
-              className="w-full bg-[#080D1A] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
-            />
           </div>
 
           {/* PDF LINK (OPTIONAL) */}
