@@ -150,6 +150,11 @@ export default function AdminDashboardPage() {
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
                   {isSuperAlpha ? "Super Alpha" : "Admin Panel"}
                 </span>
+                {user?.admin_userid && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-800 border border-slate-700 text-indigo-300" title="Your Admin ID">
+                    ID: {user.admin_userid}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
                 University Examination & Curriculum Command Center
@@ -208,11 +213,19 @@ export default function AdminDashboardPage() {
                 {lastUpdated && <span className="text-slate-500 text-[10px]">• Synced at {lastUpdated}</span>}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Welcome back,{" "}
-                <span className="bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-100 bg-clip-text text-transparent">
-                  {user?.name || user?.email?.split("@")[0] || "Administrator"}
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex flex-wrap items-center gap-3">
+                <span>
+                  Welcome back,{" "}
+                  <span className="bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-100 bg-clip-text text-transparent">
+                    {user?.name || user?.email?.split("@")[0] || "Administrator"}
+                  </span>
                 </span>
+                {user?.admin_userid && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+                    <span className="text-[10px] text-slate-400 font-sans uppercase tracking-wider">Admin ID:</span>
+                    {user.admin_userid}
+                  </span>
+                )}
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">

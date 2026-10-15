@@ -49,6 +49,7 @@ import {
   formatPageRange,
   formatFileSize,
 } from "./pdfUtils";
+import PdfScrollPreview from "./PdfScrollPreview";
 
 /* ================= TYPES ================= */
 
@@ -79,6 +80,7 @@ interface Paper {
   description?: string;
   paper_pdf?: string;
   subject_code?: string;
+  admin_userids?: string[] | string;
 }
 
 /* ================= AUTH HELPER ================= */
@@ -88,6 +90,50 @@ const auth = () => ({
     Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`,
   },
 });
+
+function extractAdminUserids(item: any): string[] {
+  if (!item) return [];
+  const raw =
+    item.admin_userids ??
+    item.admin_userid ??
+    item.admin_id ??
+    item.created_by;
+
+  if (!raw) return [];
+
+  if (Array.isArray(raw)) {
+    return Array.from(
+      new Set(
+        raw
+          .map(id => (typeof id === "string" ? id.trim() : String(id || "").trim()))
+          .filter(Boolean)
+      )
+    );
+  }
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return Array.from(new Set(parsed.map(x => String(x || "").trim()).filter(Boolean)));
+        }
+      } catch {}
+    }
+    if (trimmed.includes(",")) {
+      return Array.from(new Set(trimmed.split(",").map(s => s.trim()).filter(Boolean)));
+    }
+    return [trimmed];
+  }
+
+  if (typeof raw === "number") {
+    return [String(raw)];
+  }
+
+  return [];
+}
 
 function formatSemesterLabel(s: { code: string; name?: string }): string {
   if (!s.name) return `Semester ${s.code}`;
@@ -578,6 +624,7 @@ export default function AdminPapersPage() {
         p.type?.toLowerCase().includes(q) ||
         p.paper_type?.toLowerCase().includes(q) ||
         p.subject_code?.toLowerCase().includes(q) ||
+        extractAdminUserids(p).some(id => id.toLowerCase().includes(q)) ||
         p.description?.toLowerCase().includes(q)
     );
   }, [papers, searchQuery]);
@@ -933,6 +980,26 @@ export default function AdminPapersPage() {
                                     Code: {p.subject_code}
                                   </span>
                                 )}
+                                {(() => {
+                                  const paperAdmins = extractAdminUserids(p);
+                                  if (paperAdmins.length === 0) return null;
+                                  return (
+                                    <span
+                                      title={`Created/modified by Admin ID(s): ${paperAdmins.join(", ")}`}
+                                      className="inline-flex items-center gap-1 text-[10px] text-slate-400"
+                                    >
+                                      <span className="text-slate-500">by:</span>
+                                      {paperAdmins.map((id, i) => (
+                                        <span
+                                          key={`${id}-${i}`}
+                                          className="px-1.5 py-0.5 rounded font-mono font-medium bg-slate-800 border border-slate-700 text-slate-300"
+                                        >
+                                          {id}
+                                        </span>
+                                      ))}
+                                    </span>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </td>
@@ -1400,10 +1467,39 @@ export default function AdminPapersPage() {
                                 </div>
                               )}
 
-                              {/* IFRAME PREVIEW (COLLAPSIBLE) */}
+                              {/* INTERACTIVE MULTI-PAGE SCROLL PREVIEW (WITH PAGE NUMBERS & CLICK-TO-SELECT) */}
                               {hasPreview && isPreviewOpen && (
-                                <div className="rounded-lg overflow-hidden border border-slate-700 mt-2 bg-black">
-                                  <iframe src={previewMap[p._id]} className="w-full h-[220px]" />
+                                <div className="mt-2.5">
+                                  <PdfScrollPreview
+                                    paperId={p._id}
+                                    paperName={p.name}
+                                    file={fileMap[p._id]}
+                                    previewUrl={previewMap[p._id]}
+                                    pageCount={pageCountMap[p._id] || 1}
+                                    selectedPages={selectedPagesMap[p._id] || []}
+                                    onTogglePage={pageNum => {
+                                      const currentList = selectedPagesMap[p._id] || [];
+                                      const updated = currentList.includes(pageNum)
+                                        ? currentList.filter(n => n !== pageNum)
+                                        : [...currentList, pageNum].sort((a, b) => a - b);
+                                      setSelectedPagesMap(prev => ({ ...prev, [p._id]: updated }));
+                                      setRangeInputMap(prev => ({
+                                        ...prev,
+                                        [p._id]: formatPageRange(updated),
+                                      }));
+                                    }}
+                                    onSelectAll={() => {
+                                      const total = pageCountMap[p._id] || 1;
+                                      const all = Array.from({ length: total }, (_, i) => i + 1);
+                                      setSelectedPagesMap(prev => ({ ...prev, [p._id]: all }));
+                                      setRangeInputMap(prev => ({ ...prev, [p._id]: `1-${total}` }));
+                                    }}
+                                    onClear={() => {
+                                      setSelectedPagesMap(prev => ({ ...prev, [p._id]: [] }));
+                                      setRangeInputMap(prev => ({ ...prev, [p._id]: "" }));
+                                    }}
+                                    imageItems={imageItemsMap[p._id] || []}
+                                  />
                                 </div>
                               )}
 

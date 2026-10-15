@@ -562,9 +562,18 @@ async def update_question_ctrl(paper_id, q_no, body, admin):
         "updated_at": now,
     }
 
-    # preserve + extend admin list
-    admins = set(existing.get("admin_userids", []))
-    admins.add(admin["admin_userid"])
+    # preserve + extend admin list safely (handles string or list in db)
+    raw_admins = existing.get("admin_userids")
+    if isinstance(raw_admins, str):
+        existing_admins = [raw_admins.strip()] if raw_admins.strip() else []
+    elif isinstance(raw_admins, list):
+        existing_admins = [str(x).strip() for x in raw_admins if x]
+    else:
+        existing_admins = []
+
+    admins = set(existing_admins)
+    if admin.get("admin_userid"):
+        admins.add(str(admin["admin_userid"]).strip())
     updated_question["admin_userids"] = list(admins)
 
     await papers_col().update_one(

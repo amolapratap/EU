@@ -6,6 +6,58 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { API_URL } from "@/lib/api";
 
+/**
+ * Safely extracts admin IDs from an entity (question, paper, sub-question).
+ * In MongoDB, admin_userids may be:
+ * - A single string (e.g. "AR104")
+ * - An array of strings (e.g. ["AR104", "AR101"])
+ * - Comma-separated string (e.g. "AR104, AR101")
+ * - Stored under admin_userids, admin_userid, admin_id, or created_by
+ */
+function extractAdminUserids(item: any): string[] {
+  if (!item) return [];
+  const raw =
+    item.admin_userids ??
+    item.admin_userid ??
+    item.admin_id ??
+    item.created_by;
+
+  if (!raw) return [];
+
+  if (Array.isArray(raw)) {
+    return Array.from(
+      new Set(
+        raw
+          .map(id => (typeof id === "string" ? id.trim() : String(id || "").trim()))
+          .filter(Boolean)
+      )
+    );
+  }
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return Array.from(new Set(parsed.map(x => String(x || "").trim()).filter(Boolean)));
+        }
+      } catch {}
+    }
+    if (trimmed.includes(",")) {
+      return Array.from(new Set(trimmed.split(",").map(s => s.trim()).filter(Boolean)));
+    }
+    return [trimmed];
+  }
+
+  if (typeof raw === "number") {
+    return [String(raw)];
+  }
+
+  return [];
+}
+
 export default function AdminPaperQuestionsPage() {
   const { paper_id } = useParams<{ paper_id: string }>();
   const router = useRouter();
@@ -206,6 +258,27 @@ export default function AdminPaperQuestionsPage() {
               <span>Subject Code: <strong className="text-slate-200 font-medium">{paper.subject_code || "N/A"}</strong></span>
               <span>•</span>
               <span>Total Questions: <strong className="text-slate-200 font-medium">{paper.questions.length}</strong></span>
+              {(() => {
+                const paperAdmins = extractAdminUserids(paper);
+                if (paperAdmins.length === 0) return null;
+                return (
+                  <>
+                    <span>•</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="text-slate-500">Paper by:</span>
+                      {paperAdmins.map((id: string, i: number) => (
+                        <span
+                          key={`${id}-${i}`}
+                          className="px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-mono text-[11px] font-semibold"
+                          title={`Admin ID: ${id}`}
+                        >
+                          {id}
+                        </span>
+                      ))}
+                    </span>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
@@ -446,19 +519,25 @@ export default function AdminPaperQuestionsPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-sm">
-                {q.admin_userids?.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mr-1">
-                    <span>by</span>
-                    {q.admin_userids.map((id: string) => (
-                      <span
-                        key={id}
-                        className="inline-block px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 font-medium"
-                      >
-                        {id}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const admins = extractAdminUserids(q);
+                  if (admins.length === 0) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mr-1" title="Question author / modifier">
+                      <span className="text-slate-500 font-medium">by:</span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        {admins.map((id: string, i: number) => (
+                          <span
+                            key={`${id}-${i}`}
+                            className="inline-block px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-mono text-[11px] font-semibold"
+                          >
+                            {id}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <button
                   type="button"
@@ -567,11 +646,30 @@ export default function AdminPaperQuestionsPage() {
                           </span>
                           {sq.question_md}
                         </p>
-                        {sq.marks && (
-                          <span className="shrink-0 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">
-                            {sq.marks} Marks
-                          </span>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          {(() => {
+                            const sqAdmins = extractAdminUserids(sq);
+                            if (sqAdmins.length === 0) return null;
+                            return (
+                              <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                                <span className="text-slate-500 font-medium">by:</span>
+                                {sqAdmins.map((id: string, i: number) => (
+                                  <span
+                                    key={`${id}-${i}`}
+                                    className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono text-[10px] font-semibold"
+                                  >
+                                    {id}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                          {sq.marks && (
+                            <span className="shrink-0 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">
+                              {sq.marks} Marks
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {Array.isArray(sq.options) && sq.options.length > 0 && (
@@ -1264,6 +1362,23 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
           <h3 className="text-base font-bold text-white">
             {isEdit ? `Edit Question Q${qNo}` : `Add New Question (Q${qNo})`}
           </h3>
+          {(() => {
+            const existingAdmins = extractAdminUserids(data);
+            if (existingAdmins.length === 0) return null;
+            return (
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 ml-2">
+                <span className="text-slate-500">by:</span>
+                {existingAdmins.map((id: string, i: number) => (
+                  <span
+                    key={`${id}-${i}`}
+                    className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-mono text-[11px]"
+                  >
+                    {id}
+                  </span>
+                ))}
+              </span>
+            );
+          })()}
         </div>
 
         <button

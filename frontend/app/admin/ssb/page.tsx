@@ -35,12 +35,14 @@ type TabType = "semester" | "branch" | "subject" | "elective";
 interface Semester {
   code: string;
   name: string;
+  admin_userids?: string[] | string;
 }
 
 interface Branch {
   code: string;
   short_name: string;
   full_name: string;
+  admin_userids?: string[] | string;
 }
 
 interface SyllabusUnit {
@@ -60,6 +62,7 @@ interface Subject {
   max_marks: number | string;
   all_paper_pdf: string;
   syllabus?: SyllabusUnit[];
+  admin_userids?: string[] | string;
 }
 
 interface ElectiveChild {
@@ -76,6 +79,51 @@ interface ElectiveGroup {
   semester_code: string;
   branch_code: string | string[];
   subjects: ElectiveChild[];
+  admin_userids?: string[] | string;
+}
+
+function extractAdminUserids(item: any): string[] {
+  if (!item) return [];
+  const raw =
+    item.admin_userids ??
+    item.admin_userid ??
+    item.admin_id ??
+    item.created_by;
+
+  if (!raw) return [];
+
+  if (Array.isArray(raw)) {
+    return Array.from(
+      new Set(
+        raw
+          .map(id => (typeof id === "string" ? id.trim() : String(id || "").trim()))
+          .filter(Boolean)
+      )
+    );
+  }
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return Array.from(new Set(parsed.map(x => String(x || "").trim()).filter(Boolean)));
+        }
+      } catch {}
+    }
+    if (trimmed.includes(",")) {
+      return Array.from(new Set(trimmed.split(",").map(s => s.trim()).filter(Boolean)));
+    }
+    return [trimmed];
+  }
+
+  if (typeof raw === "number") {
+    return [String(raw)];
+  }
+
+  return [];
 }
 
 /* =====================================================
@@ -1076,6 +1124,23 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
                           <p className="text-xs text-slate-400 leading-tight">
                             {s.full_name}
                           </p>
+                          {(() => {
+                            const admins = extractAdminUserids(s);
+                            if (admins.length === 0) return null;
+                            return (
+                              <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
+                                <span className="text-slate-500">by:</span>
+                                {admins.map((id, i) => (
+                                  <span
+                                    key={`${id}-${i}`}
+                                    className="px-1.5 py-0.5 rounded font-mono font-medium bg-slate-800 border border-slate-700 text-slate-300"
+                                  >
+                                    {id}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </td>
 
