@@ -431,6 +431,14 @@ async def get_paper_with_questions(paper_id: str):
             "data": None
         }
 
+    # Ensure each question has admin_userids populated (fallback to paper admin_userids)
+    paper_admins = doc.get("admin_userids") or []
+    if isinstance(paper_admins, str):
+        paper_admins = [paper_admins]
+    for q in doc.get("questions", []):
+        if not q.get("admin_userids") and paper_admins:
+            q["admin_userids"] = paper_admins
+
     return {"success": True, "data": mongo_to_json(doc)}
 
 
@@ -1041,30 +1049,28 @@ async def process_pdf_branding(file_bytes):
 # mere function to merge all papers of a subject
 
 import requests
-async def merge_subject_pdfs(subject_identifier: str, admin):
-    # Lookup subject by ObjectId or code
-    subject = None
-    if ObjectId.is_valid(subject_identifier):
-        subject = await db_instance.db.subjects.find_one({"_id": ObjectId(subject_identifier)})
-    if not subject:
-        subject = await db_instance.db.subjects.find_one({"code": subject_identifier})
+async def merge_subject_pdfs(subject_id: str, admin):
+    # Lookup subject ONLY by subject_id (_id)
+    if not ObjectId.is_valid(subject_id):
+        return {
+            "success": False,
+            "message": "Invalid subject_id"
+        }
 
+    subject = await db_instance.db.subjects.find_one({"_id": ObjectId(subject_id)})
     if not subject:
         return {
             "success": False,
             "message": "Subject not found"
         }
 
-    subject_code = subject["code"]
-    subject_id = subject["_id"]
+    subject_code = subject.get("code") or ""
+    subject_db_id = subject["_id"]
 
-    # 1. Fetch papers (only valid PDFs)
+    # 1. Fetch papers by subject_id only (only valid PDFs)
     papers = await db_instance.db.papers.find(
         {
-            "$or": [
-                {"subject_id": subject_id},
-                {"subject_code": subject_code}
-            ],
+            "subject_id": {"$in": [subject_db_id, str(subject_db_id)]},
             "paper_pdf": {"$exists": True, "$ne": ""}
         }
     ).sort("year", -1).to_list(None)
@@ -1141,7 +1147,7 @@ async def merge_subject_pdfs(subject_identifier: str, admin):
 
     # 5. Save URL in subject
     await db_instance.db.subjects.update_one(
-        {"_id": subject_id},
+        {"_id": subject_db_id},
         {
             "$set": {
                 "all_paper_pdf": merged_url,

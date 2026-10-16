@@ -915,12 +915,19 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
   }
 
   // Merge all papers of a subject into a single master PDF
-  const handleMerge = async (subjectCode: string) => {
+  const handleMerge = async (subject: Subject) => {
+    const subjectId = subject._id;
+    const key = subjectId || subject.code;
+    if (!subjectId) {
+      toast.error("Subject ID not found");
+      return;
+    }
+
     try {
-      setLoadingSubject(subjectCode);
+      setLoadingSubject(key);
       setStatusMap(prev => ({
         ...prev,
-        [subjectCode]: "Merging...",
+        [key]: "Merging...",
       }));
 
       const res = await fetch(`${API_URL}/admin/merge-subject-pdfs`, {
@@ -929,7 +936,7 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
         },
-        body: JSON.stringify({ subject_code: subjectCode }),
+        body: JSON.stringify({ subject_id: subjectId }),
       });
 
       const data = await res.json();
@@ -940,20 +947,20 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
 
       setStatusMap(prev => ({
         ...prev,
-        [subjectCode]: `✔ ${data.total_papers || "All"} papers merged (${(data.papers || []).map((p: any) => p.year).join(", ")})`,
+        [key]: `✔ ${data.total_papers || "All"} papers merged (${(data.papers || []).map((p: any) => p.year).join(", ")})`,
       }));
 
-      toast.success(`Merged papers successfully for ${subjectCode}!`);
+      toast.success(`Merged papers successfully for ${subject.short_name || subject.code}!`);
 
       // Update subject local state with new merged PDF URL
       setSubjects(prev =>
-        prev.map(s => (s.code === subjectCode ? { ...s, all_paper_pdf: data.url } : s))
+        prev.map(s => ((s._id && s._id === subjectId) || s.code === subject.code ? { ...s, all_paper_pdf: data.url } : s))
       );
     } catch (err: any) {
       console.error(err);
       setStatusMap(prev => ({
         ...prev,
-        [subjectCode]: `Error: ${err.message}`,
+        [key]: `Error: ${err.message}`,
       }));
       toast.error(err.message || "Failed to merge subject papers");
     } finally {
@@ -1218,16 +1225,16 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
                             )}
 
                             <button
-                              onClick={() => handleMerge(s.code)}
-                              disabled={loadingSubject === s.code}
+                              onClick={() => handleMerge(s)}
+                              disabled={loadingSubject === (s._id || s.code)}
                               className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition cursor-pointer ${
-                                loadingSubject === s.code
+                                loadingSubject === (s._id || s.code)
                                   ? "bg-slate-800 text-slate-400 border-slate-700 cursor-not-allowed"
                                   : "bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25 active:scale-95"
                               }`}
                               title="Merge all yearly question papers into one PDF"
                             >
-                              {loadingSubject === s.code ? (
+                              {loadingSubject === (s._id || s.code) ? (
                                 <>
                                   <RefreshCw size={11} className="animate-spin text-indigo-400" />
                                   <span>Merging...</span>
@@ -1241,13 +1248,13 @@ function SubjectSection({ onCountChange, refreshTrigger }: { onCountChange: (c: 
                             </button>
                           </div>
 
-                          {statusMap[s.code] && (
+                          {statusMap[s._id || s.code] && (
                             <span
                               className={`text-[10px] font-medium leading-tight ${
-                                statusMap[s.code].startsWith("Error") ? "text-rose-400" : "text-emerald-400"
+                                statusMap[s._id || s.code].startsWith("Error") ? "text-rose-400" : "text-emerald-400"
                               }`}
                             >
-                              {statusMap[s.code]}
+                              {statusMap[s._id || s.code]}
                             </span>
                           )}
                         </div>

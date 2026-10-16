@@ -300,10 +300,10 @@ async def generate_paper_pdf_route(
 # To merge all papers of a subject
 @router.post("/merge-subject-pdfs")
 async def merge_subject(body: dict, admin=Depends(get_current_admin)):
-    subject_identifier = body.get("subject_id") or body.get("subject_code")
-    if not subject_identifier:
-        raise HTTPException(status_code=400, detail="subject_id or subject_code is required")
-    result = await merge_subject_pdfs(subject_identifier, admin)
+    subject_id = body.get("subject_id")
+    if not subject_id:
+        raise HTTPException(status_code=400, detail="subject_id is required")
+    result = await merge_subject_pdfs(subject_id, admin)
 
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])

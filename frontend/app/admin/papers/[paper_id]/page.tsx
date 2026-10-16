@@ -520,16 +520,17 @@ export default function AdminPaperQuestionsPage() {
 
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 {(() => {
-                  const admins = extractAdminUserids(q);
+                  const directAdmins = extractAdminUserids(q);
+                  const admins = directAdmins.length > 0 ? directAdmins : extractAdminUserids(paper);
                   if (admins.length === 0) return null;
                   return (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mr-1" title="Question author / modifier">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mr-1" title="Question author / contributor">
                       <span className="text-slate-500 font-medium">by:</span>
                       <div className="flex flex-wrap items-center gap-1">
                         {admins.map((id: string, i: number) => (
                           <span
                             key={`${id}-${i}`}
-                            className="inline-block px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-mono text-[11px] font-semibold"
+                            className="inline-block px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-mono text-[11px] font-semibold"
                           >
                             {id}
                           </span>
@@ -648,7 +649,13 @@ export default function AdminPaperQuestionsPage() {
                         </p>
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                           {(() => {
-                            const sqAdmins = extractAdminUserids(sq);
+                            const directSq = extractAdminUserids(sq);
+                            const sqAdmins =
+                              directSq.length > 0
+                                ? directSq
+                                : extractAdminUserids(q).length > 0
+                                ? extractAdminUserids(q)
+                                : extractAdminUserids(paper);
                             if (sqAdmins.length === 0) return null;
                             return (
                               <div className="flex items-center gap-1 text-[11px] text-slate-400">
@@ -1363,7 +1370,8 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
             {isEdit ? `Edit Question Q${qNo}` : `Add New Question (Q${qNo})`}
           </h3>
           {(() => {
-            const existingAdmins = extractAdminUserids(data);
+            const directAdmins = extractAdminUserids(data);
+            const existingAdmins = directAdmins.length > 0 ? directAdmins : extractAdminUserids(paper);
             if (existingAdmins.length === 0) return null;
             return (
               <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 ml-2">
