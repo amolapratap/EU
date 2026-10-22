@@ -44,5 +44,8 @@ class Settings:
     ONESIGNAL_APP_ID = os.getenv("ONESIGNAL_APP_ID")
     ONESIGNAL_API_KEY = os.getenv("ONESIGNAL_API_KEY")
 
+    #Gemini AI
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 settings = Settings()

@@ -1,4 +1,5 @@
 import "./globals.css";
+import "katex/dist/katex.min.css";
 import { AuthProvider } from "@/lib/auth";
 import Navbar from "@/components/navbar/Navbar";
 import Footer from "@/components/footer/Footer";

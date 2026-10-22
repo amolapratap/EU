@@ -552,13 +552,23 @@ async def add_question_ctrl(paper_id, body, admin):
 
 
 async def update_question_ctrl(paper_id, q_no, body, admin):
+    obj_id = ObjectId(paper_id)
+    target_qno = int(q_no) if str(q_no).isdigit() else q_no
+
     paper = await papers_col().find_one(
-        {"_id": ObjectId(paper_id), "questions.q_no": q_no},
+        {"_id": obj_id, "questions.q_no": target_qno},
         {"questions.$": 1}
     )
 
     if not paper or not paper.get("questions"):
-        raise HTTPException(404, "Question not found")
+        paper = await papers_col().find_one(
+            {"_id": obj_id, "questions.q_no": str(target_qno)},
+            {"questions.$": 1}
+        )
+        if paper and paper.get("questions"):
+            target_qno = str(target_qno)
+        else:
+            raise HTTPException(404, "Question not found")
 
     existing = paper["questions"][0]
     now = utcnow()
@@ -569,6 +579,10 @@ async def update_question_ctrl(paper_id, q_no, body, admin):
         **body,
         "updated_at": now,
     }
+
+    # Standardize q_no to integer if numeric digits
+    if "q_no" in updated_question and str(updated_question["q_no"]).isdigit():
+        updated_question["q_no"] = int(updated_question["q_no"])
 
     # preserve + extend admin list safely (handles string or list in db)
     raw_admins = existing.get("admin_userids")
@@ -584,12 +598,52 @@ async def update_question_ctrl(paper_id, q_no, body, admin):
         admins.add(str(admin["admin_userid"]).strip())
     updated_question["admin_userids"] = list(admins)
 
+    # Commit any staged Base64 preview images to Cloudinary permanently upon save
+    paper_meta = await papers_col().find_one(
+        {"_id": obj_id},
+        {"subject_code": 1, "year": 1, "name": 1, "type": 1, "paper_type": 1, "exam_type": 1}
+    )
+    subject_code = (paper_meta or {}).get("subject_code") or "general"
+    year = (paper_meta or {}).get("year") or "common"
+    paper_name = (paper_meta or {}).get("name")
+    exam_type = (paper_meta or {}).get("type") or (paper_meta or {}).get("exam_type")
+    paper_type = (paper_meta or {}).get("paper_type")
+    if updated_question.get("solution_blocks"):
+        from app.admin.ai.cloudinary_service import commit_blocks_images
+        updated_question["solution_blocks"] = await commit_blocks_images(
+            updated_question["solution_blocks"],
+            subject_code=subject_code,
+            year=year,
+            q_no=target_qno,
+            name=paper_name,
+            exam_type=exam_type,
+            paper_type=paper_type
+        )
+    if updated_question.get("sub_questions"):
+        from app.admin.ai.cloudinary_service import commit_blocks_images
+        processed_subs = []
+        for sq in updated_question["sub_questions"]:
+            sq_item = dict(sq)
+            if sq_item.get("solution_blocks"):
+                sq_item["solution_blocks"] = await commit_blocks_images(
+                    sq_item["solution_blocks"],
+                    subject_code=subject_code,
+                    year=year,
+                    q_no=target_qno,
+                    sq_no=sq_item.get("sq_no"),
+                    name=paper_name,
+                    exam_type=exam_type,
+                    paper_type=paper_type
+                )
+            processed_subs.append(sq_item)
+        updated_question["sub_questions"] = processed_subs
+
     await papers_col().update_one(
-        {"_id": ObjectId(paper_id), "questions.q_no": q_no},
+        {"_id": obj_id, "questions.q_no": target_qno},
         {"$set": {"questions.$": updated_question}}
     )
 
-    return {"message": "Question updated"}
+    return {"success": True, "message": "Question updated"}
 
 
 # To uplaod a img on cloudnari of solution

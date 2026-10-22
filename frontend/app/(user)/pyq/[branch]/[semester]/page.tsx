@@ -17,6 +17,8 @@ import { Share2, Share, RefreshCw, ClipboardList } from "lucide-react";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
 import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
@@ -1188,7 +1190,12 @@ useEffect(() => {
             "
           >
 
-            {q.question_md}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {q.question_md}
+            </ReactMarkdown>
 
           </div>
         )}
@@ -1215,7 +1222,8 @@ useEffect(() => {
                     ">
 
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
                       >
 
                         {block.content}
@@ -1275,7 +1283,8 @@ useEffect(() => {
           ">
 
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
             >
 
               {q.solution_md}
@@ -1382,7 +1391,12 @@ useEffect(() => {
                 "
               >
 
-                {sq.question_md}
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                >
+                  {sq.question_md}
+                </ReactMarkdown>
 
               </div>
             )}
@@ -1462,7 +1476,8 @@ useEffect(() => {
                         ">
 
                           <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
                           >
 
                             {block.content}
@@ -1521,7 +1536,8 @@ useEffect(() => {
               ">
 
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                 >
 
                   {sq.solution_md}

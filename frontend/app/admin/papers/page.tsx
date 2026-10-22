@@ -1554,6 +1554,18 @@ export default function AdminPapersPage() {
                           {/* 7. ROW ACTIONS */}
                           <td className="py-4 px-4 align-top text-right">
                             <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-1.5">
+                              {/* AI EXTRACT ACTION */}
+                              <a
+                                href={`/admin/papers/${p._id}?openAiModal=true`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="AI Auto-Extract Questions from PDF"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25 border border-indigo-500/30 transition cursor-pointer shadow-xs"
+                              >
+                                <Sparkles size={12} className="text-indigo-400" />
+                                <span>AI Extract</span>
+                              </a>
+
                               {/* OPEN IN NEW TAB ACTION */}
                               <a
                                 href={`/admin/papers/${p._id}`}

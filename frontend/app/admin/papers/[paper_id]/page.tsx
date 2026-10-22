@@ -5,6 +5,52 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { API_URL } from "@/lib/api";
+import AiExtractionModal from "../components/AiExtractionModal";
+import AiCompareSolutionModal from "../components/AiCompareSolutionModal";
+import { Sparkles, FileText, Eye, RotateCcw, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import remarkGfm from "remark-gfm";
+
+function MarkdownContent({ content, className = "" }: { content: string; className?: string }) {
+  if (!content) return null;
+  return (
+    <div className={`prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed ${className}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkMath, remarkGfm]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>,
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-3">
+              <table className="min-w-full divide-y divide-slate-800 border border-slate-800 text-xs text-left">
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th className="bg-slate-800/80 px-3 py-2 font-semibold text-slate-200 border border-slate-700/60">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-3 py-2 text-slate-300 border border-slate-800/60">{children}</td>
+          ),
+          code: ({ children }) => (
+            <code className="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono text-[12px]">
+              {children}
+            </code>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
 
 /**
  * Safely extracts admin IDs from an entity (question, paper, sub-question).
@@ -73,6 +119,13 @@ export default function AdminPaperQuestionsPage() {
 
   const [editor, setEditor] = useState<any | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [solvingQuestionNo, setSolvingQuestionNo] = useState<any | null>(null);
+  const [compareModalQuestion, setCompareModalQuestion] = useState<any | null>(null);
+
+  function handleOpenCompareSolveModal(q: any) {
+    setCompareModalQuestion(q);
+  }
   const [withWatermark, setWithWatermark] = useState(true);
   const confirmDialogRef = useRef<HTMLDialogElement | null>(null);
   const editorSectionRef = useRef<HTMLDivElement | null>(null);
@@ -89,6 +142,16 @@ export default function AdminPaperQuestionsPage() {
   useEffect(() => {
     if (paper_id) fetchPaper();
   }, [paper_id]);
+
+  /* AUTO-OPEN AI MODAL IF QUERY PARAM PRESENT */
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("openAiModal") === "true") {
+        setAiModalOpen(true);
+      }
+    }
+  }, []);
 
   /* SCROLL TO EDITOR WHEN OPENED OR CHANGED */
   useEffect(() => {
@@ -296,6 +359,14 @@ export default function AdminPaperQuestionsPage() {
 
             <button
               type="button"
+              onClick={() => setAiModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl border border-indigo-500/40 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-semibold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>✨ AI Auto-Extract</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleGeneratePdfClick}
               disabled={generatingPdf || paper.questions.length === 0}
               className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm shadow-indigo-950/50 transition disabled:opacity-40 cursor-pointer"
@@ -443,6 +514,26 @@ export default function AdminPaperQuestionsPage() {
         </div>
       </dialog>
 
+      <AiExtractionModal
+        paper={paper}
+        paperId={paper_id}
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        onSaved={fetchPaper}
+      />
+
+      <AiCompareSolutionModal
+        paper={paper}
+        paperId={paper_id}
+        question={compareModalQuestion}
+        isOpen={Boolean(compareModalQuestion)}
+        onClose={() => setCompareModalQuestion(null)}
+        onSaved={async () => {
+          await fetchPaper();
+          setCompareModalQuestion(null);
+        }}
+      />
+
       <main className="w-full px-3 sm:px-5 py-6 space-y-5">
         {paper.questions.length > 0 && (
           <div className="bg-[#111827] border border-slate-800/90 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
@@ -542,6 +633,16 @@ export default function AdminPaperQuestionsPage() {
 
                 <button
                   type="button"
+                  onClick={() => setCompareModalQuestion(q)}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  title="Compare & generate AI solution for this question"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>✨ AI Solve</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() =>
                     openEditorAndScroll(JSON.parse(JSON.stringify(q)))
                   }
@@ -569,9 +670,9 @@ export default function AdminPaperQuestionsPage() {
             {q.structure === "single" && (
               <div className="mt-4 space-y-4">
                 {/* QUESTION TEXT */}
-                <p className="text-slate-100 text-[15px] leading-relaxed whitespace-pre-wrap">
-                  {q.question_md}
-                </p>
+                <div className="text-slate-100 text-[15px] leading-relaxed">
+                  <MarkdownContent content={q.question_md} />
+                </div>
 
                 {/* SOLUTION BLOCKS OR LEGACY SOLUTION */}
                 {hasSingleBlocks ? (
@@ -583,9 +684,7 @@ export default function AdminPaperQuestionsPage() {
                     {q.solution_blocks.map((block: any, bIdx: number) => (
                       <div key={block.id || bIdx}>
                         {block.type === "text" && block.content && (
-                          <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
-                            {block.content}
-                          </p>
+                          <MarkdownContent content={block.content} />
                         )}
 
                         {block.type === "image" && (
@@ -610,9 +709,7 @@ export default function AdminPaperQuestionsPage() {
                     <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
                       ✓ Solution
                     </div>
-                    <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
-                      {q.solution_md}
-                    </p>
+                    <MarkdownContent content={q.solution_md} />
                   </div>
                 ) : null}
               </div>
@@ -641,12 +738,12 @@ export default function AdminPaperQuestionsPage() {
                       className="rounded-xl bg-[#0B101D] border border-slate-800/90 p-4 space-y-3"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-slate-100 text-sm sm:text-[15px] leading-relaxed whitespace-pre-wrap">
-                          <span className="inline-block font-bold text-indigo-300 mr-2">
+                        <div className="text-slate-100 text-sm sm:text-[15px] leading-relaxed flex items-start gap-2 flex-1">
+                          <span className="font-bold text-indigo-300 shrink-0 mt-0.5">
                             ({sq.sq_no})
                           </span>
-                          {sq.question_md}
-                        </p>
+                          <MarkdownContent content={sq.question_md} className="flex-1" />
+                        </div>
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                           {(() => {
                             const directSq = extractAdminUserids(sq);
@@ -728,9 +825,7 @@ export default function AdminPaperQuestionsPage() {
                               {sq.solution_blocks.map((block: any) => (
                                 <div key={block.id}>
                                   {block.type === "text" && block.content && (
-                                    <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
-                                      {block.content}
-                                    </p>
+                                    <MarkdownContent content={block.content} />
                                   )}
 
                                   {block.type === "image" && (
@@ -751,9 +846,7 @@ export default function AdminPaperQuestionsPage() {
                               ))}
                             </div>
                           ) : sq.solution_md ? (
-                            <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
-                              {sq.solution_md}
-                            </p>
+                            <MarkdownContent content={sq.solution_md} />
                           ) : null}
                         </div>
                       )}
@@ -898,6 +991,79 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
     initSolutionBlocks(data.solution_blocks, data.solution_md)
   );
 
+  const [aiSolvingInEditor, setAiSolvingInEditor] = useState(false);
+  const [showPdfInEditor, setShowPdfInEditor] = useState(false);
+  const [adminPromptInEditor, setAdminPromptInEditor] = useState("");
+  const [showPromptPopup, setShowPromptPopup] = useState(false);
+  const [targetSqInEditor, setTargetSqInEditor] = useState("all");
+  const [visualTypeInEditor, setVisualTypeInEditor] = useState<"image" | "svg" | "none">("svg");
+  const [showLivePreview, setShowLivePreview] = useState(false);
+
+  async function handleAiGenerateInEditor(promptText?: string, targetSq?: string) {
+    const finalPrompt = (promptText !== undefined ? promptText : adminPromptInEditor).trim();
+    const finalTarget = targetSq !== undefined ? targetSq : targetSqInEditor;
+
+    setAiSolvingInEditor(true);
+    toast.loading(`Generating solution with AI for Q${qNo}...`, { id: `editor-solve-${qNo}` });
+
+    try {
+      const payload: any = {
+        nature,
+        structure,
+        question_md: question,
+        q_no: qNo,
+        marks,
+        options: data.options || [],
+        sub_questions: subs,
+        save_to_db: false,
+        admin_prompt: finalPrompt || undefined,
+        visual_type: visualTypeInEditor,
+      };
+
+      if (structure === "multi" && finalTarget !== "all") {
+        payload.sq_no = finalTarget;
+      }
+
+      const res = await fetch(`${API_URL}/admin/papers/${paperId}/ai-solve-question`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.detail || "AI solution generation failed");
+      }
+
+      if (structure === "multi" && json.sub_questions) {
+        setSubs(
+          json.sub_questions.map((s: any) => ({
+            ...s,
+            solution_blocks: initSolutionBlocks(s.solution_blocks, s.solution_md),
+          }))
+        );
+      } else if (nature === "objective" && json.objective_solution) {
+        setSolution(json.objective_solution.explanation || "");
+      } else if (json.solution_blocks) {
+        setSolutionBlocks(initSolutionBlocks(json.solution_blocks, ""));
+      }
+
+      setShowPromptPopup(false);
+      toast.success(`AI Solution generated for Q${qNo}! Inspect and save.`, {
+        id: `editor-solve-${qNo}`,
+      });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate solution", {
+        id: `editor-solve-${qNo}`,
+      });
+    } finally {
+      setAiSolvingInEditor(false);
+    }
+  }
+
 
   useEffect(() => {
     if (structure === "single") setNature("subjective");
@@ -906,7 +1072,8 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
   function canSave() {
     if (!marks || !structure) return false;
     if (structure === "single") return !!question;
-    if (!heading || !nature || subs.length === 0) return false;
+    // if (!heading || !nature || subs.length === 0) return false;
+    if (!nature || subs.length === 0) return false;
     return subs.every(
       s =>
         s.marks &&
@@ -1323,7 +1490,7 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
       ? `${API_URL}/admin/papers/${paperId}/questions/${qNo}`
       : `${API_URL}/admin/papers/${paperId}/questions`;
 
-    await fetch(url, {
+    const res = await fetch(url, {
       method: isEdit ? "PUT" : "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1332,7 +1499,14 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
       body: JSON.stringify(payload),
     });
 
-    onSaved();
+    const json = await res.json();
+    if (!res.ok) {
+      toast.error(json.detail || json.message || "Failed to save question");
+      return;
+    }
+
+    toast.success(isEdit ? `Question Q${qNo} updated successfully!` : `Question Q${qNo} added!`);
+    await onSaved();
     onClose();
   }
 
@@ -1389,17 +1563,224 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
           })()}
         </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-medium transition cursor-pointer"
-        >
-          ✕ Close
-        </button>
+        <div className="flex items-center gap-2">
+          {paper.paper_pdf && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowPdfInEditor(!showPdfInEditor);
+                if (!showPdfInEditor) setShowLivePreview(false);
+              }}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                showPdfInEditor
+                  ? "bg-indigo-600 text-white border-indigo-500 shadow-sm"
+                  : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+              }`}
+              title="Toggle question paper PDF preview side-by-side"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>{showPdfInEditor ? "Hide PDF" : "PDF Split View"}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowLivePreview(!showLivePreview);
+              if (!showLivePreview) setShowPdfInEditor(false);
+            }}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+              showLivePreview
+                ? "bg-purple-600 text-white border-purple-500 shadow-sm"
+                : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+            }`}
+            title="Toggle live rendered preview of question and solution (KaTeX math & markdown)"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>{showLivePreview ? "Close Preview" : "👁️ Live Preview"}</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={aiSolvingInEditor}
+            onClick={() => setShowPromptPopup(true)}
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{aiSolvingInEditor ? "Generating..." : "✨ AI Generate Solution"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-medium transition cursor-pointer"
+          >
+            ✕ Close
+          </button>
+        </div>
       </div>
 
-      {/* TOP METADATA GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* SPLIT SCREEN CONTAINER */}
+      <div className={(showPdfInEditor && paper.paper_pdf) || showLivePreview ? "grid grid-cols-1 lg:grid-cols-2 gap-6 items-start" : ""}>
+        {showPdfInEditor && paper.paper_pdf && (
+          <div className="h-[82vh] sticky top-20 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl flex flex-col">
+            <div className="h-9 px-3 border-b border-slate-800 bg-[#0d1322] flex items-center justify-between text-xs text-slate-400 shrink-0">
+              <span className="font-semibold text-slate-200">Question Paper PDF</span>
+              <a
+                href={paper.paper_pdf}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-indigo-400 hover:underline flex items-center gap-1"
+              >
+                <span>Open in tab</span>
+                <Eye className="w-3 h-3" />
+              </a>
+            </div>
+            <iframe
+              src={`${paper.paper_pdf}#toolbar=1`}
+              title="Question Paper PDF"
+              className="w-full flex-1 border-0 bg-slate-900"
+            />
+          </div>
+        )}
+
+        {showLivePreview && !showPdfInEditor && (
+          <div className="h-[84vh] sticky top-20 rounded-2xl overflow-hidden border border-purple-500/35 bg-[#0B101D] shadow-2xl flex flex-col order-last lg:order-none">
+            <div className="h-10 px-4 border-b border-slate-800 bg-[#0d1322] flex items-center justify-between text-xs shrink-0">
+              <span className="font-bold text-purple-300 flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5 text-purple-400" />
+                Live Student View Preview
+              </span>
+              <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[10px] font-mono">
+                Real-time KaTeX Math
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-[#080C14]">
+              {/* Question metadata badge */}
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-bold text-xs font-mono">
+                  Q{qNo}
+                </span>
+                {marks && (
+                  <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">
+                    {marks} Marks
+                  </span>
+                )}
+                {heading && (
+                  <span className="text-xs text-slate-400 font-medium">
+                    Section: <span className="text-slate-200">{heading}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Single question statement */}
+              {structure === "single" && question && (
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    Question Statement:
+                  </div>
+                  <MarkdownContent content={question} />
+                </div>
+              )}
+
+              {/* Single question solution */}
+              {structure === "single" && (
+                <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-3">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                    ✓ Rendered Solution
+                  </div>
+                  {solutionBlocks && solutionBlocks.length > 0 ? (
+                    solutionBlocks.map((block: any, bIdx: number) => (
+                      <div key={block.id || bIdx} className="space-y-2">
+                        {block.type === "text" && block.content && (
+                          <MarkdownContent content={block.content} />
+                        )}
+                        {block.type === "image" && block.image_url && (
+                          <div className="space-y-1 pt-1">
+                            <img
+                              src={block.image_url}
+                              alt={block.caption || "diagram"}
+                              className="rounded-xl border border-slate-700/80 max-h-[400px] w-auto mx-auto bg-black/40"
+                            />
+                            {block.caption && (
+                              <p className="text-[11px] text-slate-400 italic text-center">
+                                {block.caption}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No solution content entered yet.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Multi sub-questions */}
+              {structure === "multi" && (
+                <div className="space-y-4">
+                  {subs.map((sq: any, sIdx: number) => (
+                    <div key={sq.sq_no || sIdx} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+                        <span className="font-bold text-indigo-300 font-mono">
+                          Sub-question ({sq.sq_no})
+                        </span>
+                        {sq.marks && (
+                          <span className="text-amber-400 text-[11px]">[{sq.marks} Marks]</span>
+                        )}
+                      </div>
+
+                      {sq.question_md ? (
+                        <MarkdownContent content={sq.question_md} />
+                      ) : (
+                        <p className="text-xs text-slate-500 italic">No question statement entered</p>
+                      )}
+
+                      {/* Solution blocks for this sub */}
+                      <div className="mt-2 pt-2 border-t border-slate-800/80 space-y-2.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                          ✓ Sub ({sq.sq_no}) Solution:
+                        </div>
+                        {sq.solution_blocks && sq.solution_blocks.length > 0 ? (
+                          sq.solution_blocks.map((b: any, bIdx: number) => (
+                            <div key={b.id || bIdx} className="space-y-1">
+                              {b.type === "text" && b.content && (
+                                <MarkdownContent content={b.content} />
+                              )}
+                              {b.type === "image" && b.image_url && (
+                                <div className="space-y-1 pt-1">
+                                  <img
+                                    src={b.image_url}
+                                    alt={b.caption || "diagram"}
+                                    className="rounded-xl border border-slate-700/80 max-h-[350px] w-auto mx-auto bg-black/40"
+                                  />
+                                  {b.caption && (
+                                    <p className="text-[11px] text-slate-400 italic text-center">
+                                      {b.caption}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-slate-500 italic">No solution blocks yet</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-6">
+
+
+          {/* TOP METADATA GRID */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
             Total Marks
@@ -1885,22 +2266,161 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
         </div>
       )}
 
-      <div className="flex items-center gap-3 pt-4 border-t border-slate-800">
-        <button
-          type="button"
-          onClick={save}
-          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-sm transition cursor-pointer"
-        >
-          💾 Save Question
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300 text-sm font-medium transition cursor-pointer"
-        >
-          Cancel
-        </button>
+        <div className="flex items-center gap-3 pt-4 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={save}
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-sm transition cursor-pointer"
+          >
+            💾 Save Question
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300 text-sm font-medium transition cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
+    </div>
+
+      {/* AI GUIDANCE & SOLVER POP-UP MODAL */}
+      {showPromptPopup && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-[#0F172A] border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">AI Solution Generator</h3>
+                  <p className="text-xs text-slate-400 font-mono">Question {qNo} ({marks || "7"} Marks)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPromptPopup(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Sub-question selector if multi */}
+            {structure === "multi" && subs.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">
+                  Target Sub-questions:
+                </label>
+                <select
+                  value={targetSqInEditor}
+                  onChange={(e) => setTargetSqInEditor(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 outline-none focus:border-emerald-500"
+                >
+                  <option value="all">Solve All Sub-questions ({subs.length})</option>
+                  {subs.map((sq: any) => (
+                    <option key={sq.sq_no} value={sq.sq_no}>
+                      Solve Only Sub ({sq.sq_no})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Visual Format Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">
+                Visual Format (Diagram / Graph):
+              </label>
+              <select
+                value={visualTypeInEditor}
+                onChange={(e) => setVisualTypeInEditor(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 outline-none focus:border-emerald-500 font-medium"
+              >
+                <option value="svg">⚡ SVG Vector (Default / When Needed)</option>
+                <option value="image">🖼️ Actual Image (PNG Matplotlib Plot)</option>
+                <option value="none">🚫 No Visuals (Text/Math Only)</option>
+              </select>
+            </div>
+
+            {/* Prompt input */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300">
+                Optional Guidance for AI (Prompt):
+              </label>
+              <textarea
+                rows={3}
+                value={adminPromptInEditor}
+                onChange={(e) => setAdminPromptInEditor(e.target.value)}
+                placeholder="e.g. Focus on step-by-step derivation, draw diagram only if essential, keep concise..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none resize-none font-sans"
+              />
+              <div className="flex flex-wrap gap-1.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setAdminPromptInEditor("Provide step-by-step mathematical derivation.")}
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                >
+                  + Derivation
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminPromptInEditor("Keep explanation concise and high-scoring for exams.")}
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                >
+                  + Concise Notes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminPromptInEditor("Draw technical diagram or circuit only if strictly required.")}
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                >
+                  + Diagram if needed
+                </button>
+                {adminPromptInEditor && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminPromptInEditor("")}
+                    className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 transition cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowPromptPopup(false)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={aiSolvingInEditor}
+                onClick={() => handleAiGenerateInEditor()}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {aiSolvingInEditor ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Generate Solution</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

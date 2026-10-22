@@ -3,6 +3,12 @@ from app.auth.dependencies import admin_required
 from app.auth.utils import get_current_admin
 from app.admin.controllers import *
 from fastapi import Form
+from typing import Optional
+from app.admin.ai_controllers import (
+    ai_extract_paper_questions,
+    ai_save_extracted_questions,
+    ai_solve_question_ctrl
+)
 
 
 
@@ -190,6 +196,36 @@ async def add_sub_question(paper_id: str, q_no: int, body: dict, admin = Depends
 @router.delete("/papers/{paper_id}/questions/{q_no}/sub/{sq_no}")
 async def delete_sub_question(paper_id: str, q_no: int, sq_no: str, admin = Depends(get_current_admin)):
     return await delete_sub_question_ctrl(paper_id, q_no, sq_no, admin)
+
+# =====================================================
+# AI QUESTION EXTRACTION & AUTO-SOLVER
+# =====================================================
+@router.post("/papers/{paper_id}/ai-extract")
+async def ai_extract_route(
+    paper_id: str,
+    file: Optional[UploadFile] = File(None),
+    pdf_url: Optional[str] = Form(None),
+    page_numbers: Optional[str] = Form(None),
+    admin = Depends(get_current_admin)
+):
+    pages = [int(p.strip()) for p in page_numbers.split(",") if p.strip().isdigit()] if page_numbers else None
+    return await ai_extract_paper_questions(paper_id, file, pdf_url, pages, admin)
+
+@router.post("/papers/{paper_id}/ai-save-questions")
+async def ai_save_questions_route(
+    paper_id: str,
+    body: dict = Body(...),
+    admin = Depends(get_current_admin)
+):
+    return await ai_save_extracted_questions(paper_id, body, admin)
+
+@router.post("/papers/{paper_id}/ai-solve-question")
+async def ai_solve_question_route(
+    paper_id: str,
+    body: dict = Body(...),
+    admin = Depends(get_current_admin)
+):
+    return await ai_solve_question_ctrl(paper_id, body, admin)
 
 
 
