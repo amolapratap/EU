@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import OptionMathText from "@/components/pyq/OptionMathText";
 import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
 import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
@@ -1442,10 +1443,8 @@ useEffect(() => {
 
           </div>
 
-          <div className="leading-7">
-
-            {option}
-
+          <div className="leading-7 flex-1 min-w-0">
+            <OptionMathText text={option} />
           </div>
 
         </div>
@@ -1619,8 +1618,9 @@ useEffect(() => {
         {Array.isArray(q.options) && (
           <div className="ml-4 space-y-1 text-sm text-slate-600">
             {q.options.map((op: string, i: number) => (
-              <div key={i}>
-                {String.fromCharCode(65 + i)}. {op}
+              <div key={i} className="flex items-center gap-1.5">
+                <span className="font-semibold shrink-0">{String.fromCharCode(65 + i)}.</span>
+                <OptionMathText text={op} />
               </div>
             ))}
           </div>
@@ -1644,8 +1644,9 @@ useEffect(() => {
             {Array.isArray(sq.options) && (
               <div className="ml-4 space-y-1 text-xs text-slate-500">
                 {sq.options.map((op: string, i: number) => (
-                  <div key={i}>
-                    {String.fromCharCode(65 + i)}. {op}
+                  <div key={i} className="flex items-center gap-1.5">
+                    <span className="font-semibold shrink-0">{String.fromCharCode(65 + i)}.</span>
+                    <OptionMathText text={op} />
                   </div>
                 ))}
               </div>

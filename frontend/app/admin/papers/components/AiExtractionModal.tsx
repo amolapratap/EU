@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
+import OptionMathText from "@/components/pyq/OptionMathText";
 
 interface AiExtractionModalProps {
   paper: any;
@@ -781,31 +782,39 @@ export default function AiExtractionModal({
                               return (
                                 <div
                                   key={optIdx}
-                                  className={`flex items-center gap-2 p-2.5 rounded-xl border transition ${
+                                  className={`flex flex-col gap-1 p-2 rounded-xl border transition ${
                                     isCorrect ? "bg-emerald-500/15 border-emerald-500/40" : "bg-[#090D16] border-slate-800"
                                   }`}
                                 >
-                                  <input
-                                    type="radio"
-                                    name={`single-opt-${idx}`}
-                                    checked={isCorrect}
-                                    onChange={() => updateQuestion(idx, { correct_index: optIdx })}
-                                    className="accent-emerald-500 w-4 h-4 cursor-pointer ml-1"
-                                  />
-                                  <span className="text-xs font-bold text-slate-400">
-                                    {String.fromCharCode(65 + optIdx)}.
-                                  </span>
-                                  <input
-                                    type="text"
-                                    value={opt}
-                                    placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
-                                    onChange={(e) => {
-                                      const currentOpts = q.options && q.options.length === 4 ? [...q.options] : ["", "", "", ""];
-                                      currentOpts[optIdx] = e.target.value;
-                                      updateQuestion(idx, { options: currentOpts });
-                                    }}
-                                    className="w-full bg-transparent text-xs text-slate-100 outline-none"
-                                  />
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="radio"
+                                      name={`single-opt-${idx}`}
+                                      checked={isCorrect}
+                                      onChange={() => updateQuestion(idx, { correct_index: optIdx })}
+                                      className="accent-emerald-500 w-4 h-4 cursor-pointer ml-1 shrink-0"
+                                    />
+                                    <span className="text-xs font-bold text-slate-400 shrink-0">
+                                      {String.fromCharCode(65 + optIdx)}.
+                                    </span>
+                                    <input
+                                      type="text"
+                                      value={opt}
+                                      placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
+                                      onChange={(e) => {
+                                        const currentOpts = q.options && q.options.length === 4 ? [...q.options] : ["", "", "", ""];
+                                        currentOpts[optIdx] = e.target.value;
+                                        updateQuestion(idx, { options: currentOpts });
+                                      }}
+                                      className="w-full bg-transparent text-xs text-slate-100 outline-none"
+                                    />
+                                  </div>
+                                  {opt && (opt.includes("$") || opt.includes("\\")) && (
+                                    <div className="ml-6 px-2 py-0.5 rounded bg-slate-950/80 border border-indigo-500/30 text-[11px] text-indigo-200 flex items-center gap-1.5">
+                                      <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 shrink-0">Math:</span>
+                                      <OptionMathText text={opt} />
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -909,37 +918,45 @@ export default function AiExtractionModal({
                                       return (
                                         <div
                                           key={optIdx}
-                                          className={`flex items-center gap-1.5 p-1.5 rounded-lg border transition ${
+                                          className={`flex flex-col gap-1 p-1.5 rounded-lg border transition ${
                                             isCorrect ? "bg-emerald-500/15 border-emerald-500/40" : "bg-[#090D16] border-slate-800"
                                           }`}
                                         >
-                                          <input
-                                            type="radio"
-                                            name={`sub-opt-${idx}-${sqIdx}`}
-                                            checked={isCorrect}
-                                            onChange={() => {
-                                              const newSubs = [...q.sub_questions];
-                                              newSubs[sqIdx].correct_index = optIdx;
-                                              updateQuestion(idx, { sub_questions: newSubs });
-                                            }}
-                                            className="accent-emerald-500 w-3.5 h-3.5 cursor-pointer ml-0.5"
-                                          />
-                                          <span className="text-[11px] font-bold text-slate-400">
-                                            {String.fromCharCode(65 + optIdx)}.
-                                          </span>
-                                          <input
-                                            type="text"
-                                            value={opt}
-                                            placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
-                                            onChange={(e) => {
-                                              const currentOpts = sq.options && sq.options.length === 4 ? [...sq.options] : ["", "", "", ""];
-                                              currentOpts[optIdx] = e.target.value;
-                                              const newSubs = [...q.sub_questions];
-                                              newSubs[sqIdx].options = currentOpts;
-                                              updateQuestion(idx, { sub_questions: newSubs });
-                                            }}
-                                            className="w-full bg-transparent text-xs text-slate-200 outline-none"
-                                          />
+                                          <div className="flex items-center gap-1.5">
+                                            <input
+                                              type="radio"
+                                              name={`sub-opt-${idx}-${sqIdx}`}
+                                              checked={isCorrect}
+                                              onChange={() => {
+                                                const newSubs = [...q.sub_questions];
+                                                newSubs[sqIdx].correct_index = optIdx;
+                                                updateQuestion(idx, { sub_questions: newSubs });
+                                              }}
+                                              className="accent-emerald-500 w-3.5 h-3.5 cursor-pointer ml-0.5 shrink-0"
+                                            />
+                                            <span className="text-[11px] font-bold text-slate-400 shrink-0">
+                                              {String.fromCharCode(65 + optIdx)}.
+                                            </span>
+                                            <input
+                                              type="text"
+                                              value={opt}
+                                              placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
+                                              onChange={(e) => {
+                                                const currentOpts = sq.options && sq.options.length === 4 ? [...sq.options] : ["", "", "", ""];
+                                                currentOpts[optIdx] = e.target.value;
+                                                const newSubs = [...q.sub_questions];
+                                                newSubs[sqIdx].options = currentOpts;
+                                                updateQuestion(idx, { sub_questions: newSubs });
+                                              }}
+                                              className="w-full bg-transparent text-xs text-slate-200 outline-none"
+                                            />
+                                          </div>
+                                          {opt && (opt.includes("$") || opt.includes("\\")) && (
+                                            <div className="ml-5 px-1.5 py-0.5 rounded bg-slate-950/80 border border-indigo-500/30 text-[10px] text-indigo-200 flex items-center gap-1.5">
+                                              <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 shrink-0">Math:</span>
+                                              <OptionMathText text={opt} />
+                                            </div>
+                                          )}
                                         </div>
                                       );
                                     })}

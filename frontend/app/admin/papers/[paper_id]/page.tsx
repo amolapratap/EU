@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import OptionMathText from "@/components/pyq/OptionMathText";
 
 function MarkdownContent({ content, className = "" }: { content: string; className?: string }) {
   if (!content) return null;
@@ -674,6 +675,47 @@ export default function AdminPaperQuestionsPage() {
                   <MarkdownContent content={q.question_md} />
                 </div>
 
+                {/* SINGLE QUESTION OPTIONS (IF OBJECTIVE) */}
+                {Array.isArray(q.options) && q.options.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {q.options.map((op: string, i: number) => {
+                        const isCorrect = typeof q.correct_index === "number" && i === q.correct_index;
+                        return (
+                          <li
+                            key={i}
+                            className={`px-3 py-2 rounded-lg border text-sm flex items-center justify-between gap-2 ${
+                              isCorrect
+                                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200 font-medium"
+                                : "bg-slate-900/60 border-slate-800 text-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <strong className="mr-1 text-slate-400 shrink-0">
+                                {String.fromCharCode(65 + i)}.
+                              </strong>
+                              <div className="flex-1 min-w-0">
+                                <OptionMathText text={op} />
+                              </div>
+                            </div>
+                            {isCorrect && (
+                              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 shrink-0">
+                                ✓ Correct
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    {typeof q.correct_index === "number" && q.correct_index >= 0 && (
+                      <p className="text-xs text-emerald-400 font-medium">
+                        Correct Option: Option {String.fromCharCode(65 + q.correct_index)} (#{q.correct_index + 1})
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* SOLUTION BLOCKS OR LEGACY SOLUTION */}
                 {hasSingleBlocks ? (
                   <div className="rounded-xl bg-emerald-950/20 border border-emerald-500/25 border-l-4 border-l-emerald-500 p-4 space-y-3.5">
@@ -790,12 +832,14 @@ export default function AdminPaperQuestionsPage() {
                                       : "bg-slate-900/60 border-slate-800 text-slate-300"
                                   }`}
                                 >
-                                  <span>
-                                    <strong className="mr-1.5">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <strong className="mr-1 text-slate-400 shrink-0">
                                       {String.fromCharCode(65 + i)}.
                                     </strong>
-                                    {op}
-                                  </span>
+                                    <div className="flex-1 min-w-0">
+                                      <OptionMathText text={op} />
+                                    </div>
+                                  </div>
                                   {isCorrect && (
                                     <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 shrink-0">
                                       ✓ Correct
@@ -1737,6 +1781,41 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
                         <p className="text-xs text-slate-500 italic">No question statement entered</p>
                       )}
 
+                      {/* Sub-question options preview */}
+                      {Array.isArray(sq.options) && sq.options.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            {sq.options.map((op: string, i: number) => {
+                              const isCorrect = typeof sq.correct_index === "number" && sq.correct_index === i;
+                              return (
+                                <li
+                                  key={i}
+                                  className={`px-2.5 py-1.5 rounded-lg border text-xs flex items-center justify-between gap-2 ${
+                                    isCorrect
+                                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200 font-medium"
+                                      : "bg-slate-950/60 border-slate-800 text-slate-300"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <strong className="mr-1 text-slate-400 shrink-0">
+                                      {String.fromCharCode(65 + i)}.
+                                    </strong>
+                                    <div className="flex-1 min-w-0">
+                                      <OptionMathText text={op} />
+                                    </div>
+                                  </div>
+                                  {isCorrect && (
+                                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 shrink-0">
+                                      ✓ Correct
+                                    </span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      )}
+
                       {/* Solution blocks for this sub */}
                       <div className="mt-2 pt-2 border-t border-slate-800/80 space-y-2.5">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
@@ -2078,34 +2157,42 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
                         {s.options.map((op: string, idx: number) => (
                           <div
                             key={idx}
-                            className={`flex items-center gap-2.5 p-2 rounded-xl border transition ${
+                            className={`flex flex-col gap-1.5 p-2 rounded-xl border transition ${
                               s.correct_index === idx
                                 ? "border-emerald-500/50 bg-emerald-500/10"
                                 : "border-slate-800 bg-[#090D16]"
                             }`}
                           >
-                            <input
-                              type="radio"
-                              name={`sub-opt-${i}`}
-                              className="accent-emerald-500 w-4 h-4 ml-1 cursor-pointer"
-                              checked={s.correct_index === idx}
-                              onChange={() =>
-                                updateSub(i, { correct_index: idx })
-                              }
-                            />
-                            <span className="text-xs font-bold text-slate-400">
-                              {String.fromCharCode(65 + idx)}.
-                            </span>
-                            <input
-                              className="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-500 outline-none"
-                              placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-                              value={op}
-                              onChange={e => {
-                                const opts = [...s.options];
-                                opts[idx] = e.target.value;
-                                updateSub(i, { options: opts });
-                              }}
-                            />
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="radio"
+                                name={`sub-opt-${i}`}
+                                className="accent-emerald-500 w-4 h-4 ml-1 cursor-pointer shrink-0"
+                                checked={s.correct_index === idx}
+                                onChange={() =>
+                                  updateSub(i, { correct_index: idx })
+                                }
+                              />
+                              <span className="text-xs font-bold text-slate-400 shrink-0">
+                                {String.fromCharCode(65 + idx)}.
+                              </span>
+                              <input
+                                className="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-500 outline-none"
+                                placeholder={`Option ${String.fromCharCode(65 + idx)} (Markdown + LaTeX)`}
+                                value={op}
+                                onChange={e => {
+                                  const opts = [...s.options];
+                                  opts[idx] = e.target.value;
+                                  updateSub(i, { options: opts });
+                                }}
+                              />
+                            </div>
+                            {op && (op.includes("$") || op.includes("\\")) && (
+                              <div className="ml-7 px-2.5 py-1 rounded bg-slate-950/80 border border-indigo-500/30 text-xs text-indigo-200 flex items-center gap-2">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 shrink-0">Preview:</span>
+                                <OptionMathText text={op} />
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

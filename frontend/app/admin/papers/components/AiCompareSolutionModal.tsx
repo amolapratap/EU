@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import OptionMathText from "@/components/pyq/OptionMathText";
 import {
   Sparkles,
   CheckCircle2,
@@ -239,6 +240,60 @@ export default function AiCompareSolutionModal({
     );
   };
 
+  const renderMathText = (content: string, className = "") => {
+    if (!content) return null;
+    return (
+      <div className={`prose prose-invert max-w-none text-xs sm:text-sm text-slate-200 leading-relaxed font-sans ${className}`}>
+        <ReactMarkdown
+          remarkPlugins={[remarkMath, remarkGfm]}
+          rehypePlugins={[rehypeKatex]}
+          components={{
+            p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    );
+  };
+
+  const renderOptionsList = (options: string[], correctIndex?: number | null) => {
+    if (!Array.isArray(options) || options.length === 0) return null;
+    return (
+      <div className="space-y-1.5 pt-1">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {options.map((op: string, idx: number) => {
+            const isCorrect = typeof correctIndex === "number" && correctIndex === idx;
+            return (
+              <li
+                key={idx}
+                className={`px-3 py-2 rounded-lg border text-xs sm:text-sm flex items-center justify-between gap-2 ${
+                  isCorrect
+                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200 font-medium"
+                    : "bg-slate-900/60 border-slate-800 text-slate-300"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <strong className="mr-1 text-slate-400 shrink-0">
+                    {String.fromCharCode(65 + idx)}.
+                  </strong>
+                  <div className="flex-1 min-w-0">
+                    <OptionMathText text={op} />
+                  </div>
+                </div>
+                {isCorrect && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 shrink-0">
+                    ✓ Correct
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-hidden animate-in fade-in duration-150">
       <div className="relative w-full max-w-6xl h-[94vh] flex flex-col bg-[#090D16] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden [color-scheme:dark]">
@@ -288,8 +343,8 @@ export default function AiCompareSolutionModal({
             </div>
           )}
           {question.question_md && (
-            <div className="text-xs text-slate-300 line-clamp-2 italic font-mono bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
-              "{question.question_md}"
+            <div className="text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+              {renderMathText(question.question_md)}
             </div>
           )}
 
@@ -371,11 +426,12 @@ export default function AiCompareSolutionModal({
               {/* SINGLE QUESTION CURRENT */}
               {!isMulti && (
                 <div className="space-y-3">
+                  {renderOptionsList(question.options, question.correct_index)}
                   {question.solution_blocks && question.solution_blocks.length > 0 ? (
                     renderSolutionBlocks(question.solution_blocks)
                   ) : question.solution_md ? (
-                    <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 whitespace-pre-wrap font-sans">
-                      {question.solution_md}
+                    <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200">
+                      {renderMathText(question.solution_md)}
                     </div>
                   ) : (
                     <div className="p-8 text-center text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-dashed border-slate-800">
@@ -399,13 +455,17 @@ export default function AiCompareSolutionModal({
                         </span>
                         {sq.marks && <span className="text-amber-400 font-mono text-[11px]">{sq.marks} Marks</span>}
                       </div>
-                      <p className="text-xs text-slate-300 italic font-mono">{sq.question_md}</p>
+                      <div className="text-xs text-slate-300">
+                        {renderMathText(sq.question_md)}
+                      </div>
+
+                      {renderOptionsList(sq.options, sq.correct_index)}
 
                       {sq.solution_blocks && sq.solution_blocks.length > 0 ? (
                         renderSolutionBlocks(sq.solution_blocks)
                       ) : sq.solution_md ? (
-                        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-mono">
-                          {sq.solution_md}
+                        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                          {renderMathText(sq.solution_md)}
                         </div>
                       ) : (
                         <div className="text-xs text-slate-500 italic p-2 rounded bg-slate-900/50">
@@ -457,12 +517,13 @@ export default function AiCompareSolutionModal({
                   {generatedResult.solution_blocks ? (
                     renderSolutionBlocks(generatedResult.solution_blocks)
                   ) : generatedResult.objective_solution ? (
-                    <div className="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-2">
+                    <div className="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-3">
+                      {renderOptionsList(question.options, generatedResult.objective_solution.correct_index)}
                       <div className="text-xs font-bold text-emerald-400">
                         Correct Option: Option {String.fromCharCode(65 + (generatedResult.objective_solution.correct_index ?? 0))}
                       </div>
-                      <div className="text-xs text-slate-200 font-mono">
-                        {generatedResult.objective_solution.explanation}
+                      <div className="text-xs text-slate-200">
+                        {renderMathText(generatedResult.objective_solution.explanation)}
                       </div>
                     </div>
                   ) : null}
@@ -486,11 +547,13 @@ export default function AiCompareSolutionModal({
                         </span>
                       </div>
 
+                      {renderOptionsList(nsq.options, nsq.correct_index)}
+
                       {nsq.solution_blocks && nsq.solution_blocks.length > 0 ? (
                         renderSolutionBlocks(nsq.solution_blocks)
                       ) : nsq.solution_md ? (
-                        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-mono whitespace-pre-wrap">
-                          {nsq.solution_md}
+                        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                          {renderMathText(nsq.solution_md)}
                         </div>
                       ) : (
                         <div className="text-xs text-slate-500 italic p-2 rounded bg-slate-900/50">
