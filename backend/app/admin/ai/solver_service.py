@@ -23,8 +23,11 @@ def get_genai_client() -> genai.Client:
 
 
 class ObjectiveSolution(BaseModel):
-    correct_index: int = Field(description="0-indexed int: 0 for A, 1 for B, 2 for C, 3 for D")
-    explanation: str = Field(description="Step-by-step clear rationale explaining why this option is correct")
+    verification_check: str = Field(
+        description="Internal double-check: (1) Solve independently from first principles. (2) Audit options A-D, eliminate traps/distractors, verify signs and units. (3) Confirm 0-indexed choice: 0 for A, 1 for B, 2 for C, 3 for D."
+    )
+    correct_index: int = Field(description="The verified correct option index (0 for Option A, 1 for Option B, 2 for Option C, 3 for Option D)")
+    explanation: str = Field(description="Short, crisp, concise explanation (strictly 2 to 4 sentences or concise steps) with clean LaTeX formulas stating why the option is correct.")
 
 
 class SubjectiveSolution(BaseModel):
@@ -101,14 +104,107 @@ def safe_parse_json(text: str) -> dict:
         return json.loads(sanitized, strict=False)
 
 
-OBJECTIVE_SOLVER_PROMPT = """You are an expert exam solver for university examinations.
-Given an objective question and its 4 options, determine the single correct option with 100% certainty.
+def sanitize_latex_delimiters(text: str) -> str:
+    r"""
+    Guarantees clean, symmetric LaTeX delimiters and prevents broken math blocks.
+    Fixes:
+    - Mismatched delimiters (e.g. `$$...$` or `$...$$`).
+    - Unclosed environments like `\begin{aligned}` without `\end{aligned}`.
+    - Unclosed `$$` display math blocks before markdown headings (`##`) or at end of text.
+    - Odd single `$` signs on lines.
+    """
+    if not text or not isinstance(text, str):
+        return text or ""
 
-Return JSON in this exact structure:
-{
-  "correct_index": <int 0 for A, 1 for B, 2 for C, 3 for D>,
-  "explanation": "<step-by-step clear rationale explaining why this option is correct and why others are wrong>"
-}
+    # 1. Fix single-line mismatched math:
+    text = re.sub(r'(?m)^\$\$([^$\n]+)\$(?!\$)\s*$', r'$$\1$$', text)
+    text = re.sub(r'(?m)^(?<!\$)\$(?!\$)([^$\n]+)\$\$\s*$', r'$$\1$$', text)
+    text = re.sub(r'\$\$([^$\n]+)\$(?!\$)', r'$$\1$$', text)
+    text = re.sub(r'(?<!\$)\$([^$\n]+)\$\$', r'$$\1$$', text)
+
+    # 2. Check for unclosed environments like \begin{aligned} without \end{aligned}
+    env_matches = set(re.findall(r'\\begin\{([a-zA-Z\*]+)\}', text))
+    for env in env_matches:
+        begin_count = len(re.findall(r'\\begin\{' + re.escape(env) + r'\}', text))
+        end_count = len(re.findall(r'\\end\{' + re.escape(env) + r'\}', text))
+        if begin_count > end_count:
+            missing_ends = '\n'.join([f'\\end{{{env}}}' for _ in range(begin_count - end_count)])
+            if text.rstrip().endswith('$$'):
+                idx = text.rfind('$$')
+                text = text[:idx] + f'\n{missing_ends}\n' + text[idx:]
+            else:
+                text += f'\n{missing_ends}\n'
+
+    # 3. Fix unclosed display math '$$' before headings or end of text
+    lines = text.split('\n')
+    in_display_math = False
+    repaired_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        # If currently in display math, and we hit a markdown heading (e.g. ## Step 2)
+        if in_display_math and stripped.startswith('#'):
+            repaired_lines.append('$$')
+            in_display_math = False
+
+        temp_line = stripped.replace(r'\$$', '')
+        num_double_dollars = temp_line.count('$$')
+        if num_double_dollars % 2 != 0:
+            in_display_math = not in_display_math
+
+        repaired_lines.append(line)
+
+    if in_display_math:
+        repaired_lines.append('$$')
+
+    text = '\n'.join(repaired_lines)
+
+    # 4. Check for odd single dollar signs on single lines that are NOT part of $$
+    lines = text.split('\n')
+    repaired_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if '$$' in stripped or stripped.startswith('#') or not stripped:
+            repaired_lines.append(line)
+            continue
+        cleaned = re.sub(r'\\\s*\$', '', stripped)
+        single_dollars = re.findall(r'(?<!\$)\$(?!\$)', cleaned)
+        if len(single_dollars) % 2 != 0:
+            repaired_lines.append(line + '$')
+        else:
+            repaired_lines.append(line)
+    text = '\n'.join(repaired_lines)
+
+    return text
+
+
+OBJECTIVE_SOLVER_PROMPT = """You are an authoritative chief university examination solver specializing in objective Multiple Choice Questions (MCQs).
+Your goal is 100% mathematical, scientific, and factual accuracy with ZERO errors, while keeping the student explanation crisp and short.
+
+### MANDATORY PROTOCOL FOR 100% ACCURACY:
+1. STEP 1 - INDEPENDENT SOLVE & CALCULATION (CRITICAL):
+   - Do NOT guess or rely on superficial pattern matching.
+   - Solve the problem independently from first principles.
+   - If it involves mathematics, circuits, or physics: write down the governing formula, substitute values carefully, calculate numerical steps, and verify signs (+/-) and units.
+2. STEP 2 - DISTRACTOR AUDIT & DOUBLE-CHECK:
+   - Carefully examine all 4 options (A, B, C, D).
+   - Check for common exam traps (e.g. inverted ratios, missing square roots, radians vs degrees, factor of 2, opposite signs).
+   - Verify that your derived answer uniquely and unambiguously matches the chosen option.
+3. STEP 3 - 0-INDEXED OPTION MAPPING:
+   - Double check the index assignment:
+     * Option A -> 0
+     * Option B -> 1
+     * Option C -> 2
+     * Option D -> 3
+   - Ensure `correct_index` strictly equals the integer of the verified option.
+4. STEP 4 - SHORT & CONCISE EXPLANATION:
+   - Keep the `explanation` SHORT, DIRECT, and CONCISE (strictly 2 to 4 sentences or concise steps).
+   - Directly state the key formula/definition and the concise derivation.
+   - Do NOT write lengthy essays, repetitive fluff, or paragraph-long analyses of every wrong option.
+5. STEP 5 - LATEX DELIMITER INTEGRITY:
+   - Match all math delimiters symmetrically: `$inline$` or `$$display$$`.
+   - Never mismatch delimiter counts (never `$$...$` or `$...$$`).
 """
 
 SUBJECTIVE_SOLVER_PROMPT = """You are a distinguished university engineering professor.
@@ -168,11 +264,16 @@ async def solve_objective_question(
                     system_instruction=OBJECTIVE_SOLVER_PROMPT,
                     response_mime_type="application/json",
                     response_schema=ObjectiveSolution,
-                    temperature=0.1
+                    temperature=0.0
                 )
             )
             if res.text:
-                return safe_parse_json(res.text)
+                parsed = safe_parse_json(res.text)
+                explanation = parsed.get("explanation") or ""
+                return {
+                    "correct_index": parsed.get("correct_index", 0),
+                    "explanation": sanitize_latex_delimiters(explanation)
+                }
         except Exception as e:
             logger.warning(f"Objective solver failed on {model_name}: {e}")
             last_err = e
@@ -300,7 +401,15 @@ Provide an exemplary, high-scoring university examination solution for the given
 
 Guidelines for the solution:
 1. Academic Depth: Comprehensive, step-by-step, mathematically rigorous using LaTeX formulas ($...$ or $$...$$).
-2. Clean Structure: Clear headings, key points, derivations, comparisons, and final conclusions.
+2. Clean Structure: Clear headings (e.g. '## 1. Overview', '## 2. Derivation'), key points, derivations, and final conclusions.
+3. STRICT MATHEMATICAL & LATEX FORMATTING RULES (PREVENTS RENDERING ERRORS):
+   - DELIMITER SYMMETRY: Every opening math delimiter MUST match its closing delimiter identically:
+     * Inline math: `$formula$` (exactly ONE dollar sign on each side, e.g. `$x = 5$`).
+     * Display / block math: `$$formula$$` (exactly TWO dollar signs on each side on their own lines, e.g. `$$\\int f(x) dx$$`).
+   - NEVER MISMATCH DELIMITERS: Never start with `$$` and end with `$`, or start with `$` and end with `$$`.
+   - NEVER LEAVE MATH BLOCKS UNCLOSED: Always close display math `$$` BEFORE writing any subsequent markdown heading (`##`) or regular paragraph text.
+   - LaTeX ENVIRONMENTS: Ensure any `\\begin{{aligned}}`, `\\begin{{matrix}}`, or `\\begin{{cases}}` has a matching `\\end{{aligned}}`, `\\end{{matrix}}`, or `\\end{{cases}}` inside the same `$$` block.
+   - CURRENCY & SPECIAL SYMBOLS: Never use raw unescaped currency `$` signs; write `USD`, `Rs.`, or `\\$`.
 {visual_rules}
 """
 
@@ -338,7 +447,7 @@ Guidelines for the solution:
         blocks.append({
             "id": str(uuid.uuid4()),
             "type": "text",
-            "content": sol_text.strip()
+            "content": sanitize_latex_delimiters(sol_text.strip())
         })
 
     # 2. Visual / Diagram Block (Adaptive: Matplotlib PNG or SVG)

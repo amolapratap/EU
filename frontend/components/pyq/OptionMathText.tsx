@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { sanitizeLatexMath } from "@/lib/latexSanitizer";
 
 interface OptionMathTextProps {
   text: string;
@@ -14,10 +15,11 @@ interface OptionMathTextProps {
 
 /**
  * Renders multiple-choice question options with full dynamic LaTeX mathematics and Markdown support.
- * Converts formulas like $45^\circ$, $G(s) = \frac{s+4}{s+1}$, or $\pm \sqrt{2}$ into crisp KaTeX math.
+ * Automatically cleans broken/mismatched LaTeX delimiters so equations render seamlessly.
  */
 export default function OptionMathText({ text, className = "" }: OptionMathTextProps) {
-  if (!text) return null;
+  const sanitized = useMemo(() => (text ? sanitizeLatexMath(text) : ""), [text]);
+  if (!sanitized) return null;
 
   return (
     <span className={`inline-block text-inherit leading-relaxed ${className}`}>
@@ -31,7 +33,7 @@ export default function OptionMathText({ text, className = "" }: OptionMathTextP
           li: ({ children }) => <span className="inline">{children}</span>,
         }}
       >
-        {text}
+        {sanitized}
       </ReactMarkdown>
     </span>
   );

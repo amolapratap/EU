@@ -223,3 +223,15 @@ input[type="number"] {
   }
   
   }
+
+/* Graceful KaTeX fallback: prevents broken LaTeX math from rendering in jarring harsh red */
+.katex-error {
+  color: inherit !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  border: 1px dashed rgba(239, 68, 68, 0.3) !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  white-space: normal !important;
+  display: inline-block !important;
+}

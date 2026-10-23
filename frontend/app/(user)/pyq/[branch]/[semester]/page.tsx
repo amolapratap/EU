@@ -20,6 +20,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import OptionMathText from "@/components/pyq/OptionMathText";
+import { sanitizeLatexMath } from "@/lib/latexSanitizer";
 import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
 import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
@@ -1195,7 +1196,7 @@ useEffect(() => {
               remarkPlugins={[remarkGfm, remarkMath]}
               rehypePlugins={[rehypeKatex]}
             >
-              {q.question_md}
+              {sanitizeLatexMath(q.question_md)}
             </ReactMarkdown>
 
           </div>
@@ -1227,7 +1228,7 @@ useEffect(() => {
                         rehypePlugins={[rehypeKatex]}
                       >
 
-                        {block.content}
+                        {sanitizeLatexMath(block.content)}
 
                       </ReactMarkdown>
 
@@ -1288,7 +1289,7 @@ useEffect(() => {
               rehypePlugins={[rehypeKatex]}
             >
 
-              {q.solution_md}
+              {sanitizeLatexMath(q.solution_md)}
 
             </ReactMarkdown>
 
@@ -1396,7 +1397,7 @@ useEffect(() => {
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex]}
                 >
-                  {sq.question_md}
+                  {sanitizeLatexMath(sq.question_md)}
                 </ReactMarkdown>
 
               </div>
@@ -1479,7 +1480,7 @@ useEffect(() => {
                             rehypePlugins={[rehypeKatex]}
                           >
 
-                            {block.content}
+                            {sanitizeLatexMath(block.content)}
 
                           </ReactMarkdown>
 
@@ -1539,7 +1540,7 @@ useEffect(() => {
                   rehypePlugins={[rehypeKatex]}
                 >
 
-                  {sq.solution_md}
+                  {sanitizeLatexMath(sq.solution_md)}
 
                 </ReactMarkdown>
 

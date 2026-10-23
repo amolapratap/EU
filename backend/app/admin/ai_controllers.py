@@ -8,7 +8,7 @@ from app.database import db_instance
 from app.utils.logger import logger
 from app.utils.datetime import utcnow
 from app.admin.ai.extractor_service import extract_questions_from_pdf
-from app.admin.ai.solver_service import solve_objective_question, solve_subjective_question
+from app.admin.ai.solver_service import solve_objective_question, solve_subjective_question, sanitize_latex_delimiters
 from app.admin.ai.cloudinary_service import commit_blocks_images
 
 
@@ -158,7 +158,12 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
             processed_subs = []
             for sq in body.get("sub_questions", []):
                 sq_item = dict(sq)
+                if sq_item.get("solution_md"):
+                    sq_item["solution_md"] = sanitize_latex_delimiters(sq_item["solution_md"])
                 if sq_item.get("solution_blocks"):
+                    for blk in sq_item["solution_blocks"]:
+                        if blk.get("type") == "text" and blk.get("content"):
+                            blk["content"] = sanitize_latex_delimiters(blk["content"])
                     sq_item["solution_blocks"] = await commit_blocks_images(
                         sq_item["solution_blocks"],
                         subject_code=subject_code,
@@ -175,11 +180,15 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
             if "correct_index" in body:
                 update_fields["questions.$.correct_index"] = body.get("correct_index")
             if "solution_md" in body:
-                update_fields["questions.$.solution_md"] = body.get("solution_md")
+                update_fields["questions.$.solution_md"] = sanitize_latex_delimiters(body.get("solution_md") or "")
         else:
             if "solution_blocks" in body:
+                blocks_to_commit = body.get("solution_blocks", [])
+                for blk in blocks_to_commit:
+                    if blk.get("type") == "text" and blk.get("content"):
+                        blk["content"] = sanitize_latex_delimiters(blk["content"])
                 committed_blocks = await commit_blocks_images(
-                    body.get("solution_blocks", []),
+                    blocks_to_commit,
                     subject_code=subject_code,
                     year=year,
                     q_no=q_no,
@@ -190,7 +199,7 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
                 )
                 update_fields["questions.$.solution_blocks"] = committed_blocks
             if "solution_md" in body:
-                update_fields["questions.$.solution_md"] = body.get("solution_md")
+                update_fields["questions.$.solution_md"] = sanitize_latex_delimiters(body.get("solution_md") or "")
 
         update_res = await db_instance.db.papers.update_one(
             {"_id": obj_id, "questions.q_no": q_num},

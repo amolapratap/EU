@@ -7,6 +7,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import OptionMathText from "@/components/pyq/OptionMathText";
+import { sanitizeLatexMath } from "@/lib/latexSanitizer";
 import {
   Sparkles,
   CheckCircle2,
@@ -204,7 +205,7 @@ export default function AiCompareSolutionModal({
                   remarkPlugins={[remarkMath, remarkGfm]}
                   rehypePlugins={[rehypeKatex]}
                 >
-                  {block.content}
+                  {sanitizeLatexMath(block.content)}
                 </ReactMarkdown>
               </div>
             )}
@@ -251,7 +252,7 @@ export default function AiCompareSolutionModal({
             p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
           }}
         >
-          {content}
+          {sanitizeLatexMath(content)}
         </ReactMarkdown>
       </div>
     );

@@ -13,9 +13,11 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import OptionMathText from "@/components/pyq/OptionMathText";
+import { sanitizeLatexMath } from "@/lib/latexSanitizer";
 
 function MarkdownContent({ content, className = "" }: { content: string; className?: string }) {
   if (!content) return null;
+  const sanitized = sanitizeLatexMath(content);
   return (
     <div className={`prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed ${className}`}>
       <ReactMarkdown
@@ -47,7 +49,7 @@ function MarkdownContent({ content, className = "" }: { content: string; classNa
           ),
         }}
       >
-        {content}
+        {sanitized}
       </ReactMarkdown>
     </div>
   );
