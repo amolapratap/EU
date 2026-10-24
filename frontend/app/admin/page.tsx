@@ -17,6 +17,7 @@ import {
   LogOut,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Shield,
   Sparkles,
@@ -45,6 +46,7 @@ export default function AdminDashboardPage() {
   const [subjectCount, setSubjectCount] = useState<number | null>(null);
   const [paperCount, setPaperCount] = useState<number | null>(null);
   const [pendingReviewCount, setPendingReviewCount] = useState<number | null>(null);
+  const [pendingReportCount, setPendingReportCount] = useState<number | null>(null);
   const [blogCount, setBlogCount] = useState<number | null>(null);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -83,6 +85,10 @@ export default function AdminDashboardPage() {
         apiGet("/admin/missing_papers?status=under_review&limit=1")
           .then(res => setPendingReviewCount(typeof res?.pagination?.total === "number" ? res.pagination.total : 0))
           .catch(() => setPendingReviewCount(null)),
+
+        apiGet("/admin/question-reports?status=pending&limit=1")
+          .then(res => setPendingReportCount(typeof res?.pending_count === "number" ? res.pending_count : (typeof res?.total === "number" ? res.total : 0)))
+          .catch(() => setPendingReportCount(null)),
 
         apiGet("/admin/blog?limit=1")
           .then(res => {
@@ -264,7 +270,7 @@ export default function AdminDashboardPage() {
             <span className="text-[11px] text-slate-500">Live database counts</span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3.5 sm:gap-4">
             <MetricCard
               title="Semesters"
               value={semCount}
@@ -305,6 +311,15 @@ export default function AdminDashboardPage() {
               href="/admin/missing-papers"
               accentColor="amber"
               badge={pendingReviewCount && pendingReviewCount > 0 ? `${pendingReviewCount} pending` : undefined}
+            />
+            <MetricCard
+              title="Issue Reports"
+              value={pendingReportCount}
+              subtitle={pendingReportCount && pendingReportCount > 0 ? "Pending fixes" : "All clean"}
+              icon={AlertTriangle}
+              href="/admin/question-reports"
+              accentColor="rose"
+              badge={pendingReportCount && pendingReportCount > 0 ? `${pendingReportCount} open` : undefined}
             />
             <MetricCard
               title="Articles"
@@ -373,7 +388,20 @@ export default function AdminDashboardPage() {
               alert={pendingReviewCount && pendingReviewCount > 0 ? `${pendingReviewCount} student submissions waiting for your review` : undefined}
             />
 
-            {/* MODULE 4: BLOGS & EDITORIAL */}
+            {/* MODULE 4: QUESTION & SOLUTION ISSUE TRACKER */}
+            <ModuleCard
+              title="Question & Solution Issue Tracker"
+              badge="ERROR CORRECTION"
+              description="Track, investigate, and correct question and solution errors reported by students directly from the mobile app. Filter by subject, year, question number, and error type."
+              icon={AlertTriangle}
+              href="/admin/question-reports"
+              theme="purple"
+              tags={["Student Reports", "LaTeX Corrections", "MCQ Keys", "SVG Diagrams"]}
+              primaryActionLabel="Review Reports"
+              alert={pendingReportCount && pendingReportCount > 0 ? `${pendingReportCount} student error reports awaiting correction` : undefined}
+            />
+
+            {/* MODULE 5: BLOGS & EDITORIAL */}
             <ModuleCard
               title="Blogs & University News"
               badge="EDITORIAL DESK"

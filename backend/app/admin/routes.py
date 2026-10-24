@@ -423,3 +423,35 @@ async def delete_missing_paper_route(
 ):
     return await delete_missing_paper(paper_id, admin)
 
+
+
+# ---------- QUESTION ERROR / BUG REPORTS ----------
+@router.get("/question-reports", dependencies=[Depends(admin_required)])
+async def list_question_reports(
+    status: str = Query(None),
+    branch: str = Query(None),
+    semester: str = Query(None),
+    search: str = Query(None),
+    page: int = Query(1),
+    limit: int = Query(50),
+):
+    return await get_question_reports_admin({
+        "status": status,
+        "branch": branch,
+        "semester": semester,
+        "search": search,
+        "page": page,
+        "limit": limit,
+    })
+
+@router.put("/question-reports/{report_id}")
+async def edit_question_report(
+    report_id: str,
+    body: dict,
+    admin=Depends(get_current_admin)
+):
+    return await update_question_report_admin(report_id, body, admin)
+
+@router.delete("/question-reports/{report_id}", dependencies=[Depends(admin_required)])
+async def remove_question_report(report_id: str):
+    return await delete_question_report_admin(report_id)

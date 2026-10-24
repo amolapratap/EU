@@ -1627,3 +1627,103 @@ async def delete_missing_paper(paper_id: str, admin):
         "success": True,
         "message": "Missing paper deleted successfully"
     }
+
+
+# =========================================================
+# QUESTION BUG / ERROR REPORTS (ADMIN)
+# =========================================================
+async def get_question_reports_admin(query_params: dict):
+    """
+    List and filter all question reports submitted by students
+    """
+    status = query_params.get("status")
+    branch = query_params.get("branch")
+    semester = query_params.get("semester")
+    search = query_params.get("search")
+    page = int(query_params.get("page", 1))
+    limit = int(query_params.get("limit", 50))
+    skip = (page - 1) * limit
+
+    filter_query = {}
+    if status and status != "all":
+        filter_query["status"] = status
+    if branch and branch != "all":
+        filter_query["branch"] = branch
+    if semester and semester != "all":
+        filter_query["semester"] = str(semester)
+    if search:
+        filter_query["$or"] = [
+            {"subject_name": {"$regex": search, "$options": "i"}},
+            {"subject_code": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}},
+            {"issue_type": {"$regex": search, "$options": "i"}},
+            {"paper_year": {"$regex": search, "$options": "i"}},
+        ]
+
+    total_count = await db_instance.db.question_reports.count_documents(filter_query)
+    pending_count = await db_instance.db.question_reports.count_documents({"status": "pending"})
+    in_review_count = await db_instance.db.question_reports.count_documents({"status": "in_review"})
+    resolved_count = await db_instance.db.question_reports.count_documents({"status": "resolved"})
+
+    cursor = db_instance.db.question_reports.find(filter_query).sort("created_at", -1).skip(skip).limit(limit)
+    reports = await cursor.to_list(length=limit)
+
+    return {
+        "success": True,
+        "total": total_count,
+        "pending_count": pending_count,
+        "in_review_count": in_review_count,
+        "resolved_count": resolved_count,
+        "page": page,
+        "limit": limit,
+        "data": [mongo_to_json(r) for r in reports]
+    }
+
+async def update_question_report_admin(report_id: str, body: dict, admin: dict):
+    """
+    Update status and notes of a question report
+    """
+    if not ObjectId.is_valid(report_id):
+        raise HTTPException(status_code=400, detail="Invalid report ID")
+
+    updates = {
+        "updated_at": utcnow()
+    }
+    if "status" in body:
+        updates["status"] = body["status"]
+        if body["status"] in ["resolved", "rejected"]:
+            updates["resolved_at"] = utcnow()
+            admin_email = admin.get("email") if isinstance(admin, dict) else getattr(admin, "email", "Admin")
+            updates["resolved_by"] = admin_email or "Admin"
+    if "admin_notes" in body:
+        updates["admin_notes"] = body["admin_notes"]
+
+    result = await db_instance.db.question_reports.update_one(
+        {"_id": ObjectId(report_id)},
+        {"$set": updates}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    updated_doc = await db_instance.db.question_reports.find_one({"_id": ObjectId(report_id)})
+    return {
+        "success": True,
+        "message": "Report updated successfully",
+        "data": mongo_to_json(updated_doc)
+    }
+
+async def delete_question_report_admin(report_id: str):
+    """
+    Delete a question report
+    """
+    if not ObjectId.is_valid(report_id):
+        raise HTTPException(status_code=400, detail="Invalid report ID")
+
+    result = await db_instance.db.question_reports.delete_one({"_id": ObjectId(report_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return {
+        "success": True,
+        "message": "Report deleted successfully"
+    }

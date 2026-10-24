@@ -119,3 +119,9 @@ async def upload_public_pdf(
     uploader_name: str = Form(None)
 ):
     return await upload_public_missing_paper(paper_id, file, uploader_name)
+
+
+# To report bug / error in question or solution
+@router.post("/question-reports")
+async def report_question_issue(body: dict):
+    return await submit_question_report(body)

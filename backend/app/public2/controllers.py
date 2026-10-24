@@ -494,3 +494,56 @@ async def upload_public_missing_paper(paper_id: str, file, uploader_name: str):
         "status": "under_review"
     }
 
+
+
+# =========================================================
+# QUESTION BUG / ERROR REPORT SUBMISSION
+# =========================================================
+async def submit_question_report(body: dict):
+    """
+    Stores student/user error report for any question, sub-question, or solution
+    along with section address (sem, branch, subject, year, q_no, sub_q_no, etc.)
+    """
+    branch = body.get("branch")
+    semester = body.get("semester")
+    subject_code = body.get("subject_code") or body.get("subject_id")
+    subject_name = body.get("subject_name") or ""
+    paper_year = body.get("paper_year") or body.get("year") or ""
+    q_no = body.get("q_no")
+    issue_type = body.get("issue_type")
+    description = body.get("description")
+
+    if not description or not str(description).strip():
+        raise HTTPException(status_code=400, detail="Description of the issue is required.")
+
+    doc = {
+        "branch": str(branch).strip() if branch else "",
+        "semester": str(semester).strip() if semester else "",
+        "subject_id": str(body.get("subject_id", "")).strip(),
+        "subject_code": str(subject_code).strip() if subject_code else "",
+        "subject_name": str(subject_name).strip(),
+        "paper_id": str(body.get("paper_id", "")).strip(),
+        "paper_year": str(paper_year).strip(),
+        "question_id": str(body.get("question_id", "")).strip(),
+        "q_no": q_no if q_no is not None else 1,
+        "sub_q_no": str(body.get("sub_q_no")).strip() if body.get("sub_q_no") else None,
+        "target_type": str(body.get("target_type", "question")).strip(),
+        "issue_type": str(issue_type or "other").strip(),
+        "description": str(description).strip(),
+        "user_email": str(body.get("user_email")).strip() if body.get("user_email") else None,
+        "user_name": str(body.get("user_name")).strip() if body.get("user_name") else None,
+        "user_id": str(body.get("user_id")).strip() if body.get("user_id") else None,
+        "device_info": str(body.get("device_info", "Mobile App")).strip(),
+        "status": "pending",  # "pending" | "in_review" | "resolved" | "rejected"
+        "admin_notes": "",
+        "created_at": utcnow(),
+        "updated_at": utcnow(),
+    }
+
+    result = await db_instance.db.question_reports.insert_one(doc)
+
+    return {
+        "success": True,
+        "message": "Question report submitted successfully. Thank you for your feedback!",
+        "report_id": str(result.inserted_id)
+    }
