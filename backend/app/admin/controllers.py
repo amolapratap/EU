@@ -1630,19 +1630,29 @@ async def delete_missing_paper(paper_id: str, admin):
 
 
 # =========================================================
-# QUESTION BUG / ERROR REPORTS (ADMIN)
+# ISSUE & FEEDBACK REPORTS (ADMIN)
 # =========================================================
-async def get_question_reports_admin(query_params: dict):
+async def get_reports_admin(query_params: dict):
     """
-    List and filter all question reports submitted by students
+    List and filter all reports submitted by users
     """
     status = query_params.get("status")
     branch = query_params.get("branch")
     semester = query_params.get("semester")
     search = query_params.get("search")
     page = int(query_params.get("page", 1))
-    limit = int(query_params.get("limit", 50))
+    limit = int(query_params.get("limit", 500))
     skip = (page - 1) * limit
+
+    # Seamlessly migrate any legacy records from question_reports to reports
+    try:
+        legacy_docs = await db_instance.db.question_reports.find({}).to_list(length=200)
+        if legacy_docs:
+            for ld in legacy_docs:
+                await db_instance.db.reports.replace_one({"_id": ld["_id"]}, ld, upsert=True)
+            await db_instance.db.question_reports.delete_many({})
+    except Exception:
+        pass
 
     filter_query = {}
     if status and status != "all":
@@ -1658,14 +1668,15 @@ async def get_question_reports_admin(query_params: dict):
             {"description": {"$regex": search, "$options": "i"}},
             {"issue_type": {"$regex": search, "$options": "i"}},
             {"paper_year": {"$regex": search, "$options": "i"}},
+            {"user_email": {"$regex": search, "$options": "i"}},
         ]
 
-    total_count = await db_instance.db.question_reports.count_documents(filter_query)
-    pending_count = await db_instance.db.question_reports.count_documents({"status": "pending"})
-    in_review_count = await db_instance.db.question_reports.count_documents({"status": "in_review"})
-    resolved_count = await db_instance.db.question_reports.count_documents({"status": "resolved"})
+    total_count = await db_instance.db.reports.count_documents(filter_query)
+    pending_count = await db_instance.db.reports.count_documents({"status": "pending"})
+    in_review_count = await db_instance.db.reports.count_documents({"status": "in_review"})
+    resolved_count = await db_instance.db.reports.count_documents({"status": "resolved"})
 
-    cursor = db_instance.db.question_reports.find(filter_query).sort("created_at", -1).skip(skip).limit(limit)
+    cursor = db_instance.db.reports.find(filter_query).sort("created_at", -1).skip(skip).limit(limit)
     reports = await cursor.to_list(length=limit)
 
     return {
@@ -1679,9 +1690,11 @@ async def get_question_reports_admin(query_params: dict):
         "data": [mongo_to_json(r) for r in reports]
     }
 
-async def update_question_report_admin(report_id: str, body: dict, admin: dict):
+get_question_reports_admin = get_reports_admin
+
+async def update_report_admin(report_id: str, body: dict, admin: dict):
     """
-    Update status and notes of a question report
+    Update status and notes of a report
     """
     if not ObjectId.is_valid(report_id):
         raise HTTPException(status_code=400, detail="Invalid report ID")
@@ -1698,28 +1711,30 @@ async def update_question_report_admin(report_id: str, body: dict, admin: dict):
     if "admin_notes" in body:
         updates["admin_notes"] = body["admin_notes"]
 
-    result = await db_instance.db.question_reports.update_one(
+    result = await db_instance.db.reports.update_one(
         {"_id": ObjectId(report_id)},
         {"$set": updates}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    updated_doc = await db_instance.db.question_reports.find_one({"_id": ObjectId(report_id)})
+    updated_doc = await db_instance.db.reports.find_one({"_id": ObjectId(report_id)})
     return {
         "success": True,
         "message": "Report updated successfully",
         "data": mongo_to_json(updated_doc)
     }
 
-async def delete_question_report_admin(report_id: str):
+update_question_report_admin = update_report_admin
+
+async def delete_report_admin(report_id: str):
     """
-    Delete a question report
+    Delete a report
     """
     if not ObjectId.is_valid(report_id):
         raise HTTPException(status_code=400, detail="Invalid report ID")
 
-    result = await db_instance.db.question_reports.delete_one({"_id": ObjectId(report_id)})
+    result = await db_instance.db.reports.delete_one({"_id": ObjectId(report_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Report not found")
 
@@ -1727,3 +1742,5 @@ async def delete_question_report_admin(report_id: str):
         "success": True,
         "message": "Report deleted successfully"
     }
+
+delete_question_report_admin = delete_report_admin

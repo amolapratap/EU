@@ -497,12 +497,12 @@ async def upload_public_missing_paper(paper_id: str, file, uploader_name: str):
 
 
 # =========================================================
-# QUESTION BUG / ERROR REPORT SUBMISSION
+# GENERAL & QUESTION BUG / ERROR REPORT SUBMISSION
 # =========================================================
-async def submit_question_report(body: dict):
+async def submit_report(body: dict):
     """
-    Stores student/user error report for any question, sub-question, or solution
-    along with section address (sem, branch, subject, year, q_no, sub_q_no, etc.)
+    Stores user error report / feedback for questions, solutions, papers, or app
+    along with context metadata (sem, branch, subject, year, q_no, sub_q_no, etc.)
     """
     branch = body.get("branch")
     semester = body.get("semester")
@@ -540,10 +540,12 @@ async def submit_question_report(body: dict):
         "updated_at": utcnow(),
     }
 
-    result = await db_instance.db.question_reports.insert_one(doc)
+    result = await db_instance.db.reports.insert_one(doc)
 
     return {
         "success": True,
-        "message": "Question report submitted successfully. Thank you for your feedback!",
+        "message": "Report submitted successfully. Thank you for your feedback!",
         "report_id": str(result.inserted_id)
     }
+
+submit_question_report = submit_report

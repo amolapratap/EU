@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
           .then(res => setPendingReviewCount(typeof res?.pagination?.total === "number" ? res.pagination.total : 0))
           .catch(() => setPendingReviewCount(null)),
 
-        apiGet("/admin/question-reports?status=pending&limit=1")
+        apiGet("/admin/reports?status=pending&limit=1")
           .then(res => setPendingReportCount(typeof res?.pending_count === "number" ? res.pending_count : (typeof res?.total === "number" ? res.total : 0)))
           .catch(() => setPendingReportCount(null)),
 
@@ -317,7 +317,7 @@ export default function AdminDashboardPage() {
               value={pendingReportCount}
               subtitle={pendingReportCount && pendingReportCount > 0 ? "Pending fixes" : "All clean"}
               icon={AlertTriangle}
-              href="/admin/question-reports"
+              href="/admin/reports"
               accentColor="rose"
               badge={pendingReportCount && pendingReportCount > 0 ? `${pendingReportCount} open` : undefined}
             />
@@ -388,17 +388,17 @@ export default function AdminDashboardPage() {
               alert={pendingReviewCount && pendingReviewCount > 0 ? `${pendingReviewCount} student submissions waiting for your review` : undefined}
             />
 
-            {/* MODULE 4: QUESTION & SOLUTION ISSUE TRACKER */}
+            {/* MODULE 4: FEEDBACK & ISSUE REPORTS */}
             <ModuleCard
-              title="Question & Solution Issue Tracker"
-              badge="ERROR CORRECTION"
-              description="Track, investigate, and correct question and solution errors reported by students directly from the mobile app. Filter by subject, year, question number, and error type."
+              title="Feedback & Issue Reports"
+              badge="MODERATION"
+              description="Track, investigate, and resolve feedback and error reports submitted by students directly from the mobile app across questions, solutions, papers, and features."
               icon={AlertTriangle}
-              href="/admin/question-reports"
+              href="/admin/reports"
               theme="purple"
-              tags={["Student Reports", "LaTeX Corrections", "MCQ Keys", "SVG Diagrams"]}
+              tags={["Feedback", "Question Issues", "LaTeX Corrections", "Diagrams"]}
               primaryActionLabel="Review Reports"
-              alert={pendingReportCount && pendingReportCount > 0 ? `${pendingReportCount} student error reports awaiting correction` : undefined}
+              alert={pendingReportCount && pendingReportCount > 0 ? `${pendingReportCount} reports awaiting review` : undefined}
             />
 
             {/* MODULE 5: BLOGS & EDITORIAL */}

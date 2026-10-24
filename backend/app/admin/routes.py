@@ -425,17 +425,18 @@ async def delete_missing_paper_route(
 
 
 
-# ---------- QUESTION ERROR / BUG REPORTS ----------
+# ---------- ISSUE & FEEDBACK REPORTS ----------
+@router.get("/reports", dependencies=[Depends(admin_required)])
 @router.get("/question-reports", dependencies=[Depends(admin_required)])
-async def list_question_reports(
+async def list_reports(
     status: str = Query(None),
     branch: str = Query(None),
     semester: str = Query(None),
     search: str = Query(None),
     page: int = Query(1),
-    limit: int = Query(50),
+    limit: int = Query(500),
 ):
-    return await get_question_reports_admin({
+    return await get_reports_admin({
         "status": status,
         "branch": branch,
         "semester": semester,
@@ -444,14 +445,16 @@ async def list_question_reports(
         "limit": limit,
     })
 
+@router.put("/reports/{report_id}")
 @router.put("/question-reports/{report_id}")
-async def edit_question_report(
+async def edit_report(
     report_id: str,
     body: dict,
     admin=Depends(get_current_admin)
 ):
-    return await update_question_report_admin(report_id, body, admin)
+    return await update_report_admin(report_id, body, admin)
 
+@router.delete("/reports/{report_id}", dependencies=[Depends(admin_required)])
 @router.delete("/question-reports/{report_id}", dependencies=[Depends(admin_required)])
-async def remove_question_report(report_id: str):
-    return await delete_question_report_admin(report_id)
+async def remove_report(report_id: str):
+    return await delete_report_admin(report_id)

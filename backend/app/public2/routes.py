@@ -121,7 +121,8 @@ async def upload_public_pdf(
     return await upload_public_missing_paper(paper_id, file, uploader_name)
 
 
-# To report bug / error in question or solution
+# To report bug / error / feedback on questions, solutions, papers, or app
+@router.post("/reports")
 @router.post("/question-reports")
-async def report_question_issue(body: dict):
-    return await submit_question_report(body)
+async def report_issue(body: dict):
+    return await submit_report(body)
