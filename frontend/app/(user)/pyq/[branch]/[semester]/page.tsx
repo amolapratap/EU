@@ -1128,15 +1128,38 @@ useEffect(() => {
           </h2>
 
           {q.heading && (
-
-            <p className="
-              text-slate-600
-              mt-2
+            <div className="
+              mt-3
+              p-4
+              rounded-2xl
+              bg-indigo-50/70
+              border
+              border-indigo-100
+              text-slate-800
+              text-[15px]
+              leading-relaxed
             ">
-
-              {q.heading}
-
-            </p>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={{
+                  img: ({ src, alt }) => (
+                    <div className="my-3 space-y-1">
+                      <img
+                        src={src}
+                        alt={alt || "Question diagram"}
+                        className="max-h-[450px] w-auto mx-auto rounded-xl border border-indigo-100 bg-white shadow-sm object-contain"
+                      />
+                      {alt && alt !== "Question diagram" && (
+                        <p className="text-center text-xs text-slate-500 italic">{alt}</p>
+                      )}
+                    </div>
+                  ),
+                }}
+              >
+                {sanitizeLatexMath(q.heading)}
+              </ReactMarkdown>
+            </div>
           )}
 
         </div>
@@ -1204,7 +1227,7 @@ useEffect(() => {
 
 
         {/* SOLUTION */}
-        {q.solution_blocks?.length > 0 ? (
+        {(!q.options || q.options.length === 0) && q.solution_blocks?.length > 0 ? (
 
           <div className="space-y-5">
 
@@ -1275,7 +1298,7 @@ useEffect(() => {
 
           </div>
 
-        ) : q.solution_md ? (
+        ) : q.solution_md?.trim() ? (
 
           <div className="
             prose
@@ -1457,7 +1480,7 @@ useEffect(() => {
 
 
             {/* SOLUTION */}
-            {sq.solution_blocks?.length > 0 ? (
+            {(!sq.options || sq.options.length === 0) && sq.solution_blocks?.length > 0 ? (
 
               <div className="space-y-5">
 
@@ -1526,7 +1549,7 @@ useEffect(() => {
 
               </div>
 
-            ) : sq.solution_md ? (
+            ) : sq.solution_md?.trim() ? (
 
               <div className="
                 prose

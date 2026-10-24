@@ -63,6 +63,7 @@ export default function AiCompareSolutionModal({
 
   /* ---------------- GENERATE AI SOLUTION (PREVIEW ONLY) ---------------- */
   async function handleGeneratePreview() {
+    setGeneratedResult(null); // Clear previous preview immediately
     setGenerating(true);
     toast.loading(`Generating AI solution for Q${question.q_no}...`, {
       id: `compare-solve-${question.q_no}`,
@@ -72,6 +73,7 @@ export default function AiCompareSolutionModal({
       const payload: any = {
         nature: question.nature,
         structure: question.structure,
+        heading: question.heading || "",
         question_md: question.question_md || "",
         q_no: question.q_no,
         marks: question.marks,
@@ -133,7 +135,19 @@ export default function AiCompareSolutionModal({
       let updatedSolMd = question.solution_md;
 
       if (isMulti && generatedResult.sub_questions) {
-        updatedSubs = generatedResult.sub_questions;
+        if (targetSq !== "all") {
+          updatedSubs = (question.sub_questions || []).map((origSq: any) => {
+            if (String(origSq.sq_no).trim().toLowerCase() === String(targetSq).trim().toLowerCase()) {
+              const newlyGen = generatedResult.sub_questions.find(
+                (n: any) => String(n.sq_no).trim().toLowerCase() === String(targetSq).trim().toLowerCase()
+              );
+              return newlyGen || origSq;
+            }
+            return origSq;
+          });
+        } else {
+          updatedSubs = generatedResult.sub_questions;
+        }
       } else if (question.nature === "objective" && generatedResult.objective_solution) {
         updatedCorrectIndex = generatedResult.objective_solution.correct_index;
         updatedSolMd = generatedResult.objective_solution.explanation;
@@ -144,6 +158,7 @@ export default function AiCompareSolutionModal({
       const payload: any = {
         nature: question.nature,
         structure: question.structure,
+        heading: question.heading || "",
         question_md: question.question_md || "",
         q_no: question.q_no,
         marks: question.marks,
@@ -339,8 +354,13 @@ export default function AiCompareSolutionModal({
         <div className="p-4 border-b border-slate-800 bg-[#0B101D] space-y-3 shrink-0">
           {/* Question text snippet */}
           {question.heading && (
-            <div className="text-xs text-indigo-300 font-medium">
-              Section: <span className="text-slate-300">{question.heading}</span>
+            <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/25 space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block">
+                Main Question Context / Shared Diagram (All Sub-questions):
+              </span>
+              <div className="text-xs text-slate-200">
+                {renderMathText(question.heading)}
+              </div>
             </div>
           )}
           {question.question_md && (
@@ -515,10 +535,28 @@ export default function AiCompareSolutionModal({
               {/* SINGLE QUESTION NEW */}
               {generatedResult && !isMulti && (
                 <div className="space-y-3 p-1 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-                  {generatedResult.solution_blocks ? (
+                  {generatedResult.solution_blocks && generatedResult.solution_blocks.length > 0 ? (
                     renderSolutionBlocks(generatedResult.solution_blocks)
                   ) : generatedResult.objective_solution ? (
                     <div className="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-3">
+                      {(generatedResult.verification_status === "dual_check_verified" || generatedResult.objective_solution.verification_status === "dual_check_verified") && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>Dual-Check Verified: 2 independent runs agree 100%</span>
+                        </div>
+                      )}
+                      {(generatedResult.verification_status === "majority_2_of_3" || generatedResult.objective_solution.verification_status === "majority_2_of_3") && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
+                          <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
+                          <span>Tie-Breaker Majority Consensus (2 of 3 runs agreed)</span>
+                        </div>
+                      )}
+                      {(generatedResult.verification_status === "split_decision" || generatedResult.objective_solution.verification_status === "split_decision") && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+                          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>Discrepancy: Independent solvers disagreed. Please review carefully.</span>
+                        </div>
+                      )}
                       {renderOptionsList(question.options, generatedResult.objective_solution.correct_index)}
                       <div className="text-xs font-bold text-emerald-400">
                         Correct Option: Option {String.fromCharCode(65 + (generatedResult.objective_solution.correct_index ?? 0))}
@@ -534,35 +572,73 @@ export default function AiCompareSolutionModal({
               {/* MULTI QUESTION NEW */}
               {generatedResult && isMulti && generatedResult.sub_questions && (
                 <div className="space-y-4">
-                  {generatedResult.sub_questions.map((nsq: any) => (
-                    <div
-                      key={nsq.sq_no}
-                      className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/40 space-y-2.5 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-emerald-400 font-mono">
-                          New Solution for ({nsq.sq_no})
-                        </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono">
-                          Generated
-                        </span>
+                  {generatedResult.sub_questions.map((nsq: any) => {
+                    const isTargeted = targetSq === "all" || String(targetSq).trim().toLowerCase() === String(nsq.sq_no).trim().toLowerCase();
+                    const isNewlyGenerated = nsq.is_newly_generated !== false && isTargeted;
+
+                    return (
+                      <div
+                        key={nsq.sq_no}
+                        className={`p-3.5 rounded-xl border space-y-2.5 shadow-sm ${
+                          isNewlyGenerated
+                            ? "bg-slate-950/80 border-emerald-500/40"
+                            : "bg-slate-950/40 border-slate-800 opacity-75"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={`font-bold font-mono ${isNewlyGenerated ? "text-emerald-400" : "text-slate-400"}`}>
+                            {isNewlyGenerated ? `New AI Solution for (${nsq.sq_no})` : `Current / Unchanged for (${nsq.sq_no})`}
+                          </span>
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                              isNewlyGenerated
+                                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                                : "bg-slate-800 text-slate-400"
+                            }`}
+                          >
+                            {isNewlyGenerated ? "Generated" : "Not targeted"}
+                          </span>
+                        </div>
+
+                        {nsq.verification_status === "dual_check_verified" && (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Dual-Check Verified (100% agreement)</span>
+                          </div>
+                        )}
+                        {nsq.verification_status === "majority_2_of_3" && (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[11px] font-semibold">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <span>Tie-Breaker Majority Consensus (2-of-3)</span>
+                          </div>
+                        )}
+                        {nsq.verification_status === "split_decision" && (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-semibold">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>Discrepancy: Solvers split</span>
+                          </div>
+                        )}
+
+                        {renderOptionsList(nsq.options, nsq.correct_index)}
+
+                        {nsq.error ? (
+                          <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+                            {nsq.error}
+                          </div>
+                        ) : nsq.solution_blocks && nsq.solution_blocks.length > 0 ? (
+                          renderSolutionBlocks(nsq.solution_blocks)
+                        ) : nsq.solution_md ? (
+                          <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                            {renderMathText(nsq.solution_md)}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-500 italic p-2 rounded bg-slate-900/50">
+                            No solution generated for ({nsq.sq_no})
+                          </div>
+                        )}
                       </div>
-
-                      {renderOptionsList(nsq.options, nsq.correct_index)}
-
-                      {nsq.solution_blocks && nsq.solution_blocks.length > 0 ? (
-                        renderSolutionBlocks(nsq.solution_blocks)
-                      ) : nsq.solution_md ? (
-                        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
-                          {renderMathText(nsq.solution_md)}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-slate-500 italic p-2 rounded bg-slate-900/50">
-                          No solution generated for ({nsq.sq_no})
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

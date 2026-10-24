@@ -529,6 +529,14 @@ async def add_question_ctrl(paper_id, body, admin):
     #     if total != body["marks"]:
     #         raise ValueError("Marks mismatch")
 
+    is_q_obj = (body.get("nature") == "objective") or (isinstance(body.get("options"), list) and len(body.get("options")) >= 2)
+    if is_q_obj:
+        body["solution_blocks"] = []
+    if body.get("sub_questions"):
+        for sq in body["sub_questions"]:
+            if is_q_obj or (isinstance(sq.get("options"), list) and len(sq.get("options")) >= 2):
+                sq["solution_blocks"] = []
+
     body["admin_userids"] = [admin["admin_userid"]]
     body["updated_at"] = utcnow()
 
@@ -608,6 +616,10 @@ async def update_question_ctrl(paper_id, q_no, body, admin):
     paper_name = (paper_meta or {}).get("name")
     exam_type = (paper_meta or {}).get("type") or (paper_meta or {}).get("exam_type")
     paper_type = (paper_meta or {}).get("paper_type")
+    is_q_obj = (updated_question.get("nature") == "objective") or (isinstance(updated_question.get("options"), list) and len(updated_question.get("options")) >= 2)
+    if is_q_obj:
+        updated_question["solution_blocks"] = []
+
     if updated_question.get("solution_blocks"):
         from app.admin.ai.cloudinary_service import commit_blocks_images
         updated_question["solution_blocks"] = await commit_blocks_images(
@@ -624,7 +636,11 @@ async def update_question_ctrl(paper_id, q_no, body, admin):
         processed_subs = []
         for sq in updated_question["sub_questions"]:
             sq_item = dict(sq)
-            if sq_item.get("solution_blocks"):
+            is_sub_obj = is_q_obj or (isinstance(sq_item.get("options"), list) and len(sq_item.get("options")) >= 2)
+            if is_sub_obj:
+                # Objective sub-questions strictly use solution_md; solution_blocks must be empty!
+                sq_item["solution_blocks"] = []
+            elif sq_item.get("solution_blocks"):
                 sq_item["solution_blocks"] = await commit_blocks_images(
                     sq_item["solution_blocks"],
                     subject_code=subject_code,

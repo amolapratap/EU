@@ -1,7 +1,13 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from backend directory or current working directory
+env_path = Path(__file__).resolve().parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+else:
+    load_dotenv()
 
 class Settings:
     PROJECT_NAME = "EU Study Platform"

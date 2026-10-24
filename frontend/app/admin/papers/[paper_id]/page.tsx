@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { API_URL } from "@/lib/api";
 import AiExtractionModal from "../components/AiExtractionModal";
 import AiCompareSolutionModal from "../components/AiCompareSolutionModal";
-import { Sparkles, FileText, Eye, RotateCcw, X } from "lucide-react";
+import { Sparkles, FileText, Eye, RotateCcw, X, ImageIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -46,6 +46,18 @@ function MarkdownContent({ content, className = "" }: { content: string; classNa
             <code className="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono text-[12px]">
               {children}
             </code>
+          ),
+          img: ({ src, alt }: any) => (
+            <div className="my-3 space-y-1.5">
+              <img
+                src={src}
+                alt={alt || "Question diagram"}
+                className="max-h-[450px] w-auto mx-auto rounded-xl border border-slate-700/80 bg-black/40 shadow-md object-contain"
+              />
+              {alt && alt !== "Question diagram" && (
+                <p className="text-center text-xs text-slate-400 italic">{alt}</p>
+              )}
+            </div>
           ),
         }}
       >
@@ -664,8 +676,12 @@ export default function AdminPaperQuestionsPage() {
             </div>
 
             {q.heading && (
-              <div className="mt-4 px-3.5 py-2 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-indigo-200 text-sm font-semibold">
-                {q.heading}
+              <div className="mt-4 p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-indigo-100 text-sm space-y-2">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  Main Question Context / Shared Diagram (Applies to all sub-questions)
+                </div>
+                <MarkdownContent content={q.heading} />
               </div>
             )}
 
@@ -763,14 +779,16 @@ export default function AdminPaperQuestionsPage() {
             {Array.isArray(q.sub_questions) && q.sub_questions.length > 0 && (
               <div className="mt-4 space-y-4">
                 {q.sub_questions.map((sq: any) => {
+                  const isSqObj = q.nature === "objective" || (Array.isArray(sq.options) && sq.options.length > 0);
                   const hasSubBlocks =
+                    !isSqObj &&
                     Array.isArray(sq.solution_blocks) &&
                     sq.solution_blocks.some(
                       (b: any) =>
                         (b.type === "text" && b.content?.trim()) ||
                         (b.type === "image" && b.image_url)
                     );
-                  const hasSubSolution = hasSubBlocks || Boolean(sq.solution_md?.trim());
+                  const hasSubSolution = isSqObj ? Boolean(sq.solution_md?.trim()) : (hasSubBlocks || Boolean(sq.solution_md?.trim()));
                   const hasValidCorrectIndex =
                     typeof sq.correct_index === "number" &&
                     sq.correct_index >= 0 &&
@@ -1027,10 +1045,13 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
   const [question, setQuestion] = useState(data.question_md || "");
   const [solution, setSolution] = useState(data.solution_md || "");
   const [subs, setSubs] = useState<any[]>(() =>
-    (data.sub_questions || []).map((s: any) => ({
-      ...s,
-      solution_blocks: initSolutionBlocks(s.solution_blocks, s.solution_md),
-    }))
+    (data.sub_questions || []).map((s: any) => {
+      const isSubObj = data.nature === "objective" || (Array.isArray(s.options) && s.options.length > 0);
+      return {
+        ...s,
+        solution_blocks: isSubObj ? [] : initSolutionBlocks(s.solution_blocks, s.solution_md),
+      };
+    })
   );
 
   const [solutionBlocks, setSolutionBlocks] = useState<any[]>(() =>
@@ -1044,6 +1065,38 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
   const [targetSqInEditor, setTargetSqInEditor] = useState("all");
   const [visualTypeInEditor, setVisualTypeInEditor] = useState<"image" | "svg" | "none">("svg");
   const [showLivePreview, setShowLivePreview] = useState(false);
+  const [uploadingHeaderImg, setUploadingHeaderImg] = useState(false);
+  const headerFileRef = useRef<HTMLInputElement>(null);
+
+  async function handleHeaderImageUpload(file: File) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WEBP)");
+      return;
+    }
+    setUploadingHeaderImg(true);
+    toast.loading("Uploading main question diagram...", { id: `header-img-${qNo}` });
+    try {
+      const public_id = [
+        paper?.subject_code,
+        paper?.year,
+        `q${qNo}`,
+        "header_diagram",
+        Date.now(),
+      ]
+        .filter(Boolean)
+        .join("/");
+
+      const res = await uploadSolutionImage(file, public_id);
+      const imgMd = `\n\n![Figure for Q${qNo}](${res.image_url})`;
+      setHeading(prev => (prev ? prev.trimEnd() + imgMd : imgMd.trim()));
+      toast.success("Main question diagram uploaded and added to header!", { id: `header-img-${qNo}` });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload diagram", { id: `header-img-${qNo}` });
+    } finally {
+      setUploadingHeaderImg(false);
+    }
+  }
 
   async function handleAiGenerateInEditor(promptText?: string, targetSq?: string) {
     const finalPrompt = (promptText !== undefined ? promptText : adminPromptInEditor).trim();
@@ -1056,6 +1109,7 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
       const payload: any = {
         nature,
         structure,
+        heading: heading || undefined,
         question_md: question,
         q_no: qNo,
         marks,
@@ -1521,15 +1575,26 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
 
     if (structure === "single") {
       payload.question_md = question;
-      // payload.solution_md = solution;
-      // payload.solution_md = solution;
-    if (solutionBlocks.length > 0) {
-      payload.solution_blocks = solutionBlocks;
-    }
-
+      payload.solution_md = solution || "";
+      if (nature === "objective") {
+        payload.solution_blocks = [];
+      } else {
+        payload.solution_blocks = solutionBlocks;
+      }
     } else {
       payload.heading = heading;
-      payload.sub_questions = subs;
+      const sanitizedSubs = subs.map((s: any) => {
+        const isSubObj = nature === "objective" || (Array.isArray(s.options) && s.options.length > 0);
+        if (isSubObj) {
+          return {
+            ...s,
+            solution_md: s.solution_md || "",
+            solution_blocks: [],
+          };
+        }
+        return s;
+      });
+      payload.sub_questions = sanitizedSubs;
     }
 
     const url = isEdit
@@ -1713,9 +1778,12 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
                   </span>
                 )}
                 {heading && (
-                  <span className="text-xs text-slate-400 font-medium">
-                    Section: <span className="text-slate-200">{heading}</span>
-                  </span>
+                  <div className="w-full mt-2 p-3 rounded-xl bg-indigo-950/20 border border-indigo-500/20 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block">
+                      Main Question Header / Context Preview:
+                    </span>
+                    <MarkdownContent content={heading} />
+                  </div>
                 )}
               </div>
 
@@ -2057,16 +2125,72 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
       {/* MULTI SUB-QUESTIONS EDITOR */}
       {structure === "multi" && (
         <div className="space-y-5">
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Main Question Heading / Instruction
-            </label>
-            <input
-              className={fieldClass}
-              placeholder="e.g. Choose the correct answer of the following (Any seven):"
+          <div className="space-y-3 p-4 rounded-xl border border-indigo-500/25 bg-[#090D16]/90 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-indigo-300">
+                  Main Question Heading, Context & Shared Diagram
+                </label>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Applies to all sub-questions. Supports Markdown, dynamic LaTeX ($...$ and $$...$$), and shared technical diagrams.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={headerFileRef}
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleHeaderImageUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={uploadingHeaderImg}
+                  onClick={() => headerFileRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  title="Upload a diagram / figure referenced by all sub-questions"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  {uploadingHeaderImg ? "Uploading..." : "+ Upload Header Diagram"}
+                </button>
+              </div>
+            </div>
+
+            <textarea
+              className={`${fieldClass} min-h-[90px] font-mono text-xs sm:text-sm leading-relaxed`}
+              rows={3}
+              placeholder="e.g. In the circuit shown below, $V_s = 10\text{V}$ and $R = 5\Omega$. Answer the following sub-questions (Any seven):\n\n(Tip: Click '+ Upload Header Diagram' or drag/paste an image here. Supports full LaTeX math!)"
               value={heading}
               onChange={e => setHeading(e.target.value)}
+              onPaste={e =>
+                handlePasteClipboardEvent(e, file => handleHeaderImageUpload(file))
+              }
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleHeaderImageUpload(file);
+              }}
             />
+
+            {/* LIVE DYNAMIC PREVIEW OF HEADER / DIAGRAM */}
+            {heading?.trim() && (
+              <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                  <span className="uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                    Header Live Render Preview (KaTeX Math & Media):
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                  <MarkdownContent content={heading} />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -2207,9 +2331,12 @@ function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
                       <textarea
                         className={`${fieldClass} h-28`}
                         placeholder="Solution explanation (optional)"
-                        value={s.solution_md}
+                        value={s.solution_md || ""}
                         onChange={e =>
-                          updateSub(i, { solution_md: e.target.value })
+                          updateSub(i, {
+                            solution_md: e.target.value,
+                            solution_blocks: [],
+                          })
                         }
                       />
                     </div>

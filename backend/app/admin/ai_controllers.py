@@ -214,46 +214,55 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
 
     # 1. MULTI QUESTION (WITH SUB-QUESTIONS)
     if structure == "multi" and body.get("sub_questions"):
-        target_sq = body.get("sq_no") or body.get("target_sq")  # If provided, only solve this specific sub-question
-        updated_subs = []
-        for sq in body.get("sub_questions", []):
-            sq_item = dict(sq)
-            if target_sq and str(sq.get("sq_no", "")).strip().lower() != str(target_sq).strip().lower():
-                updated_subs.append(sq_item)
-                continue
+        raw_target = body.get("sq_no") or body.get("target_sq")
+        target_sq = str(raw_target).strip().lower() if raw_target and str(raw_target).strip().lower() not in ("all", "") else None
+        main_heading = str(body.get("heading") or "").strip()
 
-            if nature == "objective":
-                sq_opts = sq.get("options") or []
-                if sq_opts:
-                    res = await solve_objective_question(sq.get("question_md", ""), sq_opts, admin_prompt=admin_prompt)
-                    if not res:
-                        import asyncio
-                        await asyncio.sleep(1.0)
-                        res = await solve_objective_question(sq.get("question_md", ""), sq_opts, admin_prompt=admin_prompt)
-                    if res:
+        # Concurrency semaphore for fast parallel solves across sub-questions
+        semaphore = asyncio.Semaphore(4)
+
+        async def solve_single_sub(sq: dict) -> dict:
+            sq_item = dict(sq)
+            sq_no_val = str(sq.get("sq_no", "")).strip().lower()
+
+            # If a specific sub-question was targeted and this is NOT it, preserve unchanged
+            if target_sq and sq_no_val != target_sq:
+                sq_item["is_newly_generated"] = False
+                return sq_item
+
+            # FRESH SLATE: Remove old solutions so old content can NEVER leak into the new generation!
+            sq_item.pop("solution_blocks", None)
+            sq_item.pop("solution_md", None)
+
+            is_sub_obj = (nature == "objective" and bool(sq.get("options"))) or (bool(sq.get("options")) and len(sq.get("options")) >= 2)
+
+            # Combine main question context/diagrams with sub-question text so solver has full information
+            raw_sq_q = sq.get("question_md", "")
+            if main_heading:
+                combined_q = f"Main Question Context / Shared Diagram / Instructions:\n{main_heading}\n\nSub-Question ({sq.get('sq_no', '')}):\n{raw_sq_q}"
+            else:
+                combined_q = raw_sq_q
+
+            async with semaphore:
+                if is_sub_obj:
+                    sq_opts = sq.get("options") or []
+                    res = await solve_objective_question(combined_q, sq_opts, admin_prompt=admin_prompt)
+                    if res and res.get("explanation"):
                         sq_item["correct_index"] = res.get("correct_index", 0)
                         sq_item["solution_md"] = res.get("explanation", "")
-            else:
-                sq_blocks = await solve_subjective_question(
-                    question_text=sq.get("question_md", ""),
-                    subject_code=subject_code,
-                    year=year,
-                    q_no=q_no,
-                    sq_no=sq.get("sq_no", "a"),
-                    marks=sq.get("marks", 7),
-                    admin_prompt=admin_prompt,
-                    visual_type=visual_type,
-                    save_to_db=save_to_db,
-                    name=paper_name,
-                    exam_type=exam_type,
-                    paper_type=paper_type
-                )
-                if not sq_blocks:
-                    import asyncio
-                    logger.warning(f"Sub-question {sq.get('sq_no')} returned empty on 1st attempt, retrying once...")
-                    await asyncio.sleep(1.0)
+                        sq_item["solution_blocks"] = []
+                        sq_item["consensus"] = res.get("consensus", False)
+                        sq_item["verification_status"] = res.get("verification_status", "single_pass")
+                        sq_item["is_newly_generated"] = True
+                    else:
+                        sq_item["correct_index"] = sq.get("correct_index", 0)
+                        sq_item["solution_md"] = ""
+                        sq_item["solution_blocks"] = []
+                        sq_item["is_newly_generated"] = False
+                        sq_item["error"] = f"Failed to generate solution for ({sq.get('sq_no')})"
+                else:
                     sq_blocks = await solve_subjective_question(
-                        question_text=sq.get("question_md", ""),
+                        question_text=combined_q,
                         subject_code=subject_code,
                         year=year,
                         q_no=q_no,
@@ -266,18 +275,29 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
                         exam_type=exam_type,
                         paper_type=paper_type
                     )
-                # Only update if valid blocks returned; do not overwrite with failures!
-                if sq_blocks:
-                    sq_item["solution_blocks"] = sq_blocks
+                    if sq_blocks:
+                        sq_item["solution_blocks"] = sq_blocks
+                        sq_item["solution_md"] = ""
+                        sq_item["is_newly_generated"] = True
+                    else:
+                        sq_item["solution_blocks"] = []
+                        sq_item["solution_md"] = ""
+                        sq_item["is_newly_generated"] = False
+                        sq_item["error"] = f"Failed to generate solution for ({sq.get('sq_no')})"
 
-            updated_subs.append(sq_item)
-            import asyncio
-            await asyncio.sleep(0.5)
+            return sq_item
+
+        tasks = [solve_single_sub(sq) for sq in body.get("sub_questions", [])]
+        updated_subs = list(await asyncio.gather(*tasks))
 
         if save_to_db:
             processed_subs = []
             for sq in updated_subs:
                 sq_item = dict(sq)
+                sq_item.pop("is_newly_generated", None)
+                sq_item.pop("error", None)
+                sq_item.pop("consensus", None)
+                sq_item.pop("verification_status", None)
                 if sq_item.get("solution_blocks"):
                     sq_item["solution_blocks"] = await commit_blocks_images(
                         sq_item["solution_blocks"],
@@ -293,7 +313,6 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
             updated_subs = processed_subs
 
             q_num = int(q_no) if str(q_no).isdigit() else q_no
-            # Try matching as int first, then as str for backward-compatibility
             update_res = await db_instance.db.papers.update_one(
                 {"_id": obj_id, "questions.q_no": q_num},
                 {"$set": {"questions.$.sub_questions": updated_subs, "updated_at": utcnow()}}
@@ -307,14 +326,17 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
         return {"success": True, "sub_questions": updated_subs}
 
     # 2. SINGLE OBJECTIVE QUESTION
-    elif nature == "objective":
+    elif (nature == "objective") or (isinstance(body.get("options"), list) and len(body.get("options")) >= 2):
         options = body.get("options", [])
         result = await solve_objective_question(question_text, options, admin_prompt=admin_prompt)
+        if not result or not result.get("explanation"):
+            raise HTTPException(status_code=500, detail="AI solver failed to generate objective solution")
         if save_to_db and result:
             q_num = int(q_no) if str(q_no).isdigit() else q_no
             update_payload = {
                 "questions.$.correct_index": result.get("correct_index", 0),
                 "questions.$.solution_md": result.get("explanation", ""),
+                "questions.$.solution_blocks": [],
                 "updated_at": utcnow()
             }
             update_res = await db_instance.db.papers.update_one(
@@ -326,7 +348,12 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
                     {"_id": obj_id, "questions.q_no": str(q_num)},
                     {"$set": update_payload}
                 )
-        return {"success": True, "objective_solution": result}
+        return {
+            "success": True,
+            "objective_solution": result,
+            "consensus": result.get("consensus", False),
+            "verification_status": result.get("verification_status", "single_pass"),
+        }
 
     # 3. SINGLE SUBJECTIVE QUESTION
     else:
@@ -344,6 +371,8 @@ async def ai_solve_question_ctrl(paper_id: str, body: dict, admin: dict):
             exam_type=exam_type,
             paper_type=paper_type
         )
+        if not solution_blocks:
+            raise HTTPException(status_code=500, detail="AI solver could not generate solution blocks. Please try again.")
         if save_to_db and solution_blocks:
             solution_blocks = await commit_blocks_images(
                 solution_blocks,

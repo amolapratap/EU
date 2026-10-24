@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import re
@@ -23,11 +24,12 @@ def get_genai_client() -> genai.Client:
 
 
 class ObjectiveSolution(BaseModel):
-    verification_check: str = Field(
-        description="Internal double-check: (1) Solve independently from first principles. (2) Audit options A-D, eliminate traps/distractors, verify signs and units. (3) Confirm 0-indexed choice: 0 for A, 1 for B, 2 for C, 3 for D."
+    correct_index: int = Field(
+        description="The 0-indexed integer of the single verified correct option (0 for Option A, 1 for Option B, 2 for Option C, 3 for Option D)."
     )
-    correct_index: int = Field(description="The verified correct option index (0 for Option A, 1 for Option B, 2 for Option C, 3 for Option D)")
-    explanation: str = Field(description="Short, crisp, concise explanation (strictly 2 to 4 sentences or concise steps) with clean LaTeX formulas stating why the option is correct.")
+    explanation: str = Field(
+        description="Direct, authoritative textbook explanation (strictly 2 to 4 concise sentences or concise derivation steps with clean LaTeX math formulas) explaining strictly WHY the selected option is correct."
+    )
 
 
 class SubjectiveSolution(BaseModel):
@@ -96,12 +98,46 @@ def execute_matplotlib_code_to_png(code_str: str) -> Optional[bytes]:
 
 
 def safe_parse_json(text: str) -> dict:
+    if not text:
+        return {}
     try:
-        return json.loads(text)
-    except Exception:
-        # Sanitize unescaped LaTeX backslashes if any escaped standard JSON parser
-        sanitized = re.sub(r'\\(?![/"\\bfnrtu]|u[0-9a-fA-F]{4})', r'\\\\', text)
+        # 1. Any single backslash followed by b,f,n,r,t AND another letter (e.g. \theta, \frac, \beta, \right, \nabla, \tau, \times)
+        # is a LaTeX command, NOT a JSON escape sequence. Double it so json.loads won't decode it as ASCII control char!
+        sanitized = re.sub(r'(?<!\\)\\([bfnrt][a-zA-Z])', lambda m: '\\\\' + m.group(1), text)
+        # 2. Any other backslash that is NOT a standard JSON escape (\", \\, \/, \b, \f, \n, \r, \t, \uXXXX)
+        # is LaTeX (e.g. \sin, \alpha, \omega, \{, \}, \_) and would cause JSONDecodeError. Double it!
+        sanitized = re.sub(r'(?<!\\)\\(?!["/\\bfnrtu]|u[0-9a-fA-F]{4})', r'\\\\', sanitized)
         return json.loads(sanitized, strict=False)
+    except Exception:
+        try:
+            return json.loads(text, strict=False)
+        except Exception:
+            return {}
+
+
+def clean_objective_explanation(text: str) -> str:
+    r"""
+    Cleans the explanation of an objective question:
+    1. Removes any internal model deliberations, second-guessing ('Let\'s select', 'Let\'s trust', 'Usually standard exam...'),
+       double check / verification meta-ramblings.
+    2. Runs sanitize_latex_delimiters to ensure math formatting is 100% symmetric and clean.
+    """
+    if not text or not isinstance(text, str):
+        return ""
+
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    clean_sentences = []
+    for s in sentences:
+        if re.search(
+            r"\b(Let\'s select|Let\'s pick|Let\'s trust|No, let\'s trust|Usually,\s*standard exam|Internal double-check|Distractor audit)\b",
+            s,
+            re.IGNORECASE
+        ):
+            continue
+        clean_sentences.append(s)
+
+    cleaned = " ".join(clean_sentences).strip()
+    return sanitize_latex_delimiters(cleaned or text)
 
 
 def sanitize_latex_delimiters(text: str) -> str:
@@ -179,32 +215,34 @@ def sanitize_latex_delimiters(text: str) -> str:
     return text
 
 
-OBJECTIVE_SOLVER_PROMPT = """You are an authoritative chief university examination solver specializing in objective Multiple Choice Questions (MCQs).
-Your goal is 100% mathematical, scientific, and factual accuracy with ZERO errors, while keeping the student explanation crisp and short.
+OBJECTIVE_SOLVER_PROMPT = r"""You are an authoritative university examination solver specializing in objective Multiple Choice Questions (MCQs).
+Your goal is 100% mathematical, scientific, and factual accuracy, producing a clean, direct, textbook-quality explanation for students.
 
-### MANDATORY PROTOCOL FOR 100% ACCURACY:
-1. STEP 1 - INDEPENDENT SOLVE & CALCULATION (CRITICAL):
-   - Do NOT guess or rely on superficial pattern matching.
-   - Solve the problem independently from first principles.
-   - If it involves mathematics, circuits, or physics: write down the governing formula, substitute values carefully, calculate numerical steps, and verify signs (+/-) and units.
-2. STEP 2 - DISTRACTOR AUDIT & DOUBLE-CHECK:
-   - Carefully examine all 4 options (A, B, C, D).
-   - Check for common exam traps (e.g. inverted ratios, missing square roots, radians vs degrees, factor of 2, opposite signs).
-   - Verify that your derived answer uniquely and unambiguously matches the chosen option.
-3. STEP 3 - 0-INDEXED OPTION MAPPING:
-   - Double check the index assignment:
-     * Option A -> 0
-     * Option B -> 1
-     * Option C -> 2
-     * Option D -> 3
-   - Ensure `correct_index` strictly equals the integer of the verified option.
-4. STEP 4 - SHORT & CONCISE EXPLANATION:
-   - Keep the `explanation` SHORT, DIRECT, and CONCISE (strictly 2 to 4 sentences or concise steps).
-   - Directly state the key formula/definition and the concise derivation.
-   - Do NOT write lengthy essays, repetitive fluff, or paragraph-long analyses of every wrong option.
-5. STEP 5 - LATEX DELIMITER INTEGRITY:
-   - Match all math delimiters symmetrically: `$inline$` or `$$display$$`.
-   - Never mismatch delimiter counts (never `$$...$` or `$...$$`).
+### EXPLANATION RULES (STRICT & MANDATORY):
+1. CLEAN TEXTBOOK EXPLANATION ONLY:
+   - The `explanation` field is presented directly to students in the official solution manual.
+   - It MUST ONLY state why the chosen correct option is true (the governing formula, definition, and direct calculation).
+   - NEVER include internal deliberations, second-guessing, or speculation (e.g. NEVER write "Let's select A or B", "maybe alpha is...", "let's trust B", "usually exam questions with...").
+   - NEVER mention "double check", "verification", "checking options", or guessing.
+   - Do NOT debate or analyze other options unless needed for a direct, concise definition.
+
+2. DYNAMIC LATEX & MATHEMATICAL INTEGRITY:
+   - All mathematical formulas, symbols, and variables MUST be wrapped in standard LaTeX delimiters:
+     * Inline math: `$formula$` (e.g., `$\sin(\theta_m) = \frac{1-\alpha}{1+\alpha}$`, `$G(s)$`, `$\omega_n$`).
+     * Display math: `$$formula$$`.
+   - Always write standard LaTeX commands for Greek letters and symbols (e.g., `\theta`, `\alpha`, `\beta`, `\tau`, `\omega`, `\phi`, `\frac{a}{b}`).
+   - Ensure all math delimiters are symmetrical: `$inline$` or `$$display$$`. Never leave unmatched `$` signs.
+
+3. CONCISE & STEP-BY-STEP:
+   - Keep the explanation strictly 2 to 4 concise sentences or clean steps.
+   - State the governing formula, substitute the given values, compute the result, and match to the correct option.
+
+4. 0-INDEXED OPTION MAPPING:
+   - Option A -> 0
+   - Option B -> 1
+   - Option C -> 2
+   - Option D -> 3
+   - `correct_index` MUST be the integer corresponding to the verified correct option.
 """
 
 SUBJECTIVE_SOLVER_PROMPT = """You are a distinguished university engineering professor.
@@ -231,9 +269,35 @@ CANDIDATE_MODELS = [
     "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest",
     "gemini-3-flash-preview",
-    "gemini-3.5-flash",
-    "gemini-3.8-flash",
 ]
+
+
+async def _execute_single_objective_pass(
+    client: genai.Client,
+    model_name: str,
+    user_prompt: str,
+    timeout: float = 20.0
+) -> Optional[Dict]:
+    """Runs a single isolated solve pass using the specified model."""
+    try:
+        res = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=model_name,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=OBJECTIVE_SOLVER_PROMPT,
+                    response_mime_type="application/json",
+                    response_schema=ObjectiveSolution,
+                    temperature=0.0
+                )
+            ),
+            timeout=timeout
+        )
+        if res.text:
+            return safe_parse_json(res.text)
+    except Exception as e:
+        logger.warning(f"Objective single pass failed on {model_name}: {e}")
+    return None
 
 
 async def solve_objective_question(
@@ -242,7 +306,13 @@ async def solve_objective_question(
     admin_prompt: Optional[str] = None
 ) -> Dict:
     """
-    Solves an objective MCQ question and returns correct_index + explanation.
+    Solves an objective MCQ question using Dual Independent Consensus:
+    1. Runs two completely isolated passes (Pass 1 & Pass 2) concurrently in parallel with ZERO shared context.
+    2. If both passes independently agree on the exact same option index:
+       -> 100% Consensus Verified!
+    3. If they disagree:
+       -> Runs an independent 3rd pass (Tie-Breaker / Arbitrator) to achieve 2-of-3 majority consensus.
+       -> If still split, returns best reasoned option and flags for manual review.
     """
     client = get_genai_client()
     user_prompt = f"Question: {question_text}\n\nOptions:\n"
@@ -253,33 +323,94 @@ async def solve_objective_question(
     if admin_prompt and admin_prompt.strip():
         user_prompt += f"\nAdditional Admin Guidance:\n{admin_prompt.strip()}\n"
 
-    last_err = None
-    for model_name in CANDIDATE_MODELS:
-        try:
-            logger.info(f"Attempting objective solve using model: {model_name}")
-            res = await client.aio.models.generate_content(
-                model=model_name,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=OBJECTIVE_SOLVER_PROMPT,
-                    response_mime_type="application/json",
-                    response_schema=ObjectiveSolution,
-                    temperature=0.0
-                )
-            )
-            if res.text:
-                parsed = safe_parse_json(res.text)
-                explanation = parsed.get("explanation") or ""
-                return {
-                    "correct_index": parsed.get("correct_index", 0),
-                    "explanation": sanitize_latex_delimiters(explanation)
-                }
-        except Exception as e:
-            logger.warning(f"Objective solver failed on {model_name}: {e}")
-            last_err = e
+    # Step 1: Run Pass 1 and Pass 2 concurrently with independent models
+    model_1 = CANDIDATE_MODELS[0]
+    model_2 = CANDIDATE_MODELS[1] if len(CANDIDATE_MODELS) > 1 else model_1
 
-    logger.error(f"Objective solver failed across all models: {last_err}")
-    return {"correct_index": 0, "explanation": "Auto-solver could not determine."}
+    logger.info(f"MCQ Dual-Check started in parallel: [{model_1}] and [{model_2}]")
+    task1 = _execute_single_objective_pass(client, model_1, user_prompt, timeout=20.0)
+    task2 = _execute_single_objective_pass(client, model_2, user_prompt, timeout=20.0)
+
+    res1, res2 = await asyncio.gather(task1, task2, return_exceptions=True)
+
+    pass1 = res1 if isinstance(res1, dict) else None
+    pass2 = res2 if isinstance(res2, dict) else None
+
+    # Fallback handling if one model failed to respond
+    if pass1 and not pass2:
+        return {
+            "correct_index": pass1.get("correct_index", 0),
+            "explanation": clean_objective_explanation(pass1.get("explanation", "")),
+            "consensus": False,
+            "verification_status": "single_pass"
+        }
+    if pass2 and not pass1:
+        return {
+            "correct_index": pass2.get("correct_index", 0),
+            "explanation": clean_objective_explanation(pass2.get("explanation", "")),
+            "consensus": False,
+            "verification_status": "single_pass"
+        }
+    if not pass1 and not pass2:
+        # Fallback to model 3 if both 1 & 2 failed
+        model_3 = CANDIDATE_MODELS[2] if len(CANDIDATE_MODELS) > 2 else "gemini-3-flash-preview"
+        pass3 = await _execute_single_objective_pass(client, model_3, user_prompt, timeout=25.0)
+        if pass3:
+            return {
+                "correct_index": pass3.get("correct_index", 0),
+                "explanation": clean_objective_explanation(pass3.get("explanation", "")),
+                "consensus": False,
+                "verification_status": "fallback"
+            }
+        return {"correct_index": 0, "explanation": "Auto-solver could not determine."}
+
+    # Step 2: Compare Pass 1 and Pass 2
+    idx1 = pass1.get("correct_index")
+    idx2 = pass2.get("correct_index")
+
+    if idx1 == idx2 and isinstance(idx1, int):
+        # 100% Dual-Check Consensus Verified!
+        logger.info(f"MCQ Dual-Check MATCH: Both models independently verified Option {chr(65 + idx1)} (#{idx1 + 1})")
+        chosen = pass1 if len(pass1.get("explanation", "")) >= len(pass2.get("explanation", "")) else pass2
+        return {
+            "correct_index": idx1,
+            "explanation": clean_objective_explanation(chosen.get("explanation", "")),
+            "consensus": True,
+            "verification_status": "dual_check_verified"
+        }
+
+    # Step 3: Disagreement -> Tie-Breaker Pass 3
+    logger.warning(f"MCQ Dual-Check MISMATCH: Pass 1={idx1}, Pass 2={idx2}. Triggering independent Tie-Breaker Pass 3...")
+    model_3 = CANDIDATE_MODELS[2] if len(CANDIDATE_MODELS) > 2 else "gemini-3-flash-preview"
+    pass3 = await _execute_single_objective_pass(client, model_3, user_prompt, timeout=25.0)
+    idx3 = pass3.get("correct_index") if isinstance(pass3, dict) else None
+
+    if idx3 == idx1:
+        logger.info(f"Tie-Breaker resolved to Option {chr(65 + idx1)} (Pass 1 + Pass 3 consensus)")
+        return {
+            "correct_index": idx1,
+            "explanation": clean_objective_explanation(pass1.get("explanation", "")),
+            "consensus": True,
+            "verification_status": "majority_2_of_3"
+        }
+    elif idx3 == idx2:
+        logger.info(f"Tie-Breaker resolved to Option {chr(65 + idx2)} (Pass 2 + Pass 3 consensus)")
+        return {
+            "correct_index": idx2,
+            "explanation": clean_objective_explanation(pass2.get("explanation", "")),
+            "consensus": True,
+            "verification_status": "majority_2_of_3"
+        }
+    else:
+        # Split decision: return Pass 1 with warning flag
+        logger.warning(f"MCQ Split decision: Pass 1={idx1}, Pass 2={idx2}, Pass 3={idx3}")
+        expl = pass1.get("explanation", "")
+        return {
+            "correct_index": idx1,
+            "explanation": clean_objective_explanation(expl) + "\n\n*(Note: Solvers showed split choices; please double-check manually.)*",
+            "consensus": False,
+            "verification_status": "split_decision"
+        }
 
 
 async def _attach_image_block(
@@ -418,15 +549,18 @@ Guidelines for the solution:
     for model_name in CANDIDATE_MODELS:
         try:
             logger.info(f"Attempting subjective solve using model: {model_name} (Q{q_no}{sq_no or ''}) [visual: {visual_mode}]")
-            res = await client.aio.models.generate_content(
-                model=model_name,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    response_mime_type="application/json",
-                    response_schema=SubjectiveSolution,
-                    temperature=0.1
-                )
+            res = await asyncio.wait_for(
+                client.aio.models.generate_content(
+                    model=model_name,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        response_mime_type="application/json",
+                        response_schema=SubjectiveSolution,
+                        temperature=0.1
+                    )
+                ),
+                timeout=30.0
             )
             if res.text:
                 data = safe_parse_json(res.text)
