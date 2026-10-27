@@ -126,3 +126,10 @@ async def upload_public_pdf(
 @router.post("/question-reports")
 async def report_issue(body: dict):
     return await submit_report(body)
+
+
+# To get latest app version and release manifest for in-app update checks
+@router.get("/app-update")
+async def get_app_update_info():
+    return await get_latest_app_version()
+

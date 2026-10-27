@@ -458,3 +458,10 @@ async def edit_report(
 @router.delete("/question-reports/{report_id}", dependencies=[Depends(admin_required)])
 async def remove_report(report_id: str):
     return await delete_report_admin(report_id)
+
+
+# ---------- APP VERSION MANAGEMENT ----------
+@router.post("/app-version")
+async def set_app_version(body: dict, admin=Depends(get_current_admin)):
+    return await update_app_version_config(body, admin)
+

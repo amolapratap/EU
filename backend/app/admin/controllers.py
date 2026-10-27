@@ -1744,3 +1744,40 @@ async def delete_report_admin(report_id: str):
     }
 
 delete_question_report_admin = delete_report_admin
+
+
+async def update_app_version_config(body: dict, admin: dict):
+    """
+    Update or create the app version config in MongoDB.
+    """
+    version_data = {
+        "app_id": "in.alpharesult.app",
+        "latestVersion": str(body.get("latestVersion", "1.2.0")),
+        "latestVersionCode": int(body.get("latestVersionCode", 19)),
+        "minRequiredVersion": str(body.get("minRequiredVersion", "1.0.0")),
+        "title": str(body.get("title", "Update Available")),
+        "message": str(body.get("message", "A new version of Alpha Result is available on Google Play.")),
+        "releaseNotes": body.get("releaseNotes", [
+            "New CBT Quiz: Practice objective PYQs with timer & verified solutions",
+            "Clear Formulas & Diagrams: Crisp equation rendering and zoomable technical diagrams",
+            "Attendance Snapshots: Save and share attendance records as images",
+            "Performance & Storage: Clear test history easily & faster load times"
+        ]),
+        "storeUrl": str(body.get("storeUrl", "https://play.google.com/store/apps/details?id=in.alpharesult.app")),
+        "isForceUpdate": bool(body.get("isForceUpdate", False)),
+        "updated_at": utcnow(),
+        "updated_by": admin.get("email") or admin.get("admin_userid") or "Admin"
+    }
+
+    await db_instance.db.app_version.update_one(
+        {"app_id": "in.alpharesult.app"},
+        {"$set": version_data},
+        upsert=True
+    )
+
+    return {
+        "success": True,
+        "message": "App version configuration saved successfully",
+        "data": version_data
+    }
+

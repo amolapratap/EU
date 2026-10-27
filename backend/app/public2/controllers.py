@@ -516,6 +516,13 @@ async def submit_report(body: dict):
     if not description or not str(description).strip():
         raise HTTPException(status_code=400, detail="Description of the issue is required.")
 
+    raw_email = body.get("user_email")
+    user_email = str(raw_email).strip().lower() if raw_email else None
+    if user_email:
+        import re
+        if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", user_email):
+            raise HTTPException(status_code=400, detail="Invalid email address format. Please enter a valid email (e.g. name@gmail.com).")
+
     doc = {
         "branch": str(branch).strip() if branch else "",
         "semester": str(semester).strip() if semester else "",
@@ -530,7 +537,7 @@ async def submit_report(body: dict):
         "target_type": str(body.get("target_type", "question")).strip(),
         "issue_type": str(issue_type or "other").strip(),
         "description": str(description).strip(),
-        "user_email": str(body.get("user_email")).strip() if body.get("user_email") else None,
+        "user_email": user_email,
         "user_name": str(body.get("user_name")).strip() if body.get("user_name") else None,
         "user_id": str(body.get("user_id")).strip() if body.get("user_id") else None,
         "device_info": str(body.get("device_info", "Mobile App")).strip(),
@@ -549,3 +556,47 @@ async def submit_report(body: dict):
     }
 
 submit_question_report = submit_report
+
+
+async def get_latest_app_version():
+    """
+    Returns app version manifest for mobile app in-app update prompts.
+    Reads dynamically from db.app_version or returns current 1.2.0 defaults.
+    """
+    default_manifest = {
+        "latestVersion": "1.2.0",
+        "latestVersionCode": 19,
+        "minRequiredVersion": "1.0.0",
+        "title": "Update Available",
+        "message": "A new version of Alpha Result is available on Google Play.",
+        "releaseNotes": [
+            "New CBT Quiz: Practice objective PYQs with timer & verified solutions",
+            "Clear Formulas & Diagrams: Crisp equation rendering and zoomable technical diagrams",
+            "Attendance Snapshots: Save and share attendance records as images",
+            "Performance & Storage: Clear test history easily & faster load times"
+        ],
+        "storeUrl": "https://play.google.com/store/apps/details?id=in.alpharesult.app",
+        "isForceUpdate": False
+    }
+
+    try:
+        if db_instance and db_instance.db is not None:
+            doc = await db_instance.db.app_version.find_one({"app_id": "in.alpharesult.app"})
+            if not doc:
+                doc = await db_instance.db.app_config.find_one({"type": "app_version"})
+            if doc and "latestVersion" in doc:
+                return {
+                    "latestVersion": str(doc.get("latestVersion", default_manifest["latestVersion"])),
+                    "latestVersionCode": int(doc.get("latestVersionCode", default_manifest["latestVersionCode"])),
+                    "minRequiredVersion": str(doc.get("minRequiredVersion", default_manifest["minRequiredVersion"])),
+                    "title": str(doc.get("title", default_manifest["title"])),
+                    "message": str(doc.get("message", default_manifest["message"])),
+                    "releaseNotes": doc.get("releaseNotes", default_manifest["releaseNotes"]),
+                    "storeUrl": str(doc.get("storeUrl", default_manifest["storeUrl"])),
+                    "isForceUpdate": bool(doc.get("isForceUpdate", default_manifest["isForceUpdate"]))
+                }
+    except Exception as e:
+        print("[AppUpdate] DB fetch error:", e)
+
+    return default_manifest
+
