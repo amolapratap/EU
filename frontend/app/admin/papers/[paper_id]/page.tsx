@@ -1034,6 +1034,7 @@ function initSolutionBlocks(
   ];
 }
 
+
 function QuestionEditor({ paper, paperId, data, onClose, onSaved }: any) {
   const isEdit = !!data.structure;
 

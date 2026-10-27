@@ -25,9 +25,27 @@ from app.electives.controllers import ensure_elective_indexes
 from app.notices.scheduler import scheduler
 from app.notices.controllers import check_new_notices
 
+
+
+from fastapi.responses import JSONResponse
+from typing import Any
+
+#  Define custom JSON response class that replaces Cloudinary with Cloudflare CDN
+class CdnJSONResponse(JSONResponse):
+    def render(self, content: Any) -> bytes:
+        # Generate the standard JSON bytes
+        raw_bytes = super().render(content)
+        # Globally replace Cloudinary with Cloudflare CDN in raw C-speed bytes!
+        return raw_bytes.replace(
+            b"https://res.cloudinary.com",
+            b"https://cdn.alpharesult.in"
+        )
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="1.0.0"
+    version="1.0.0",
+    default_response_class=CdnJSONResponse
 )
 
 

@@ -442,6 +442,8 @@ export default function ReportsAdminPage() {
                         {report.paper_id ? (
                           <Link
                             href={`/admin/papers/${report.paper_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 hover:underline"
                           >
                             <ExternalLink className="w-3 h-3" /> Jump to Paper Questions
