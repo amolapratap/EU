@@ -20,9 +20,12 @@ async def send_push_notification(notice):
             "en": notice["title"]
         },
 
+        # "url": (
+        #     f"https://alpharesult.in/notices/"
+        #     f"{notice['beu_notice_id']}"
+        # ),
         "url": (
-            f"https://alpharesult.in/notices/"
-            f"{notice['beu_notice_id']}"
+            f"{notice['full_pdf_url']}"
         )
     }
 

@@ -12,7 +12,8 @@ async def send_telegram_notice(notice):
         f"🚨 New BEU Notification\n\n"
         f"📌 {notice['title']}\n\n"
         f"📅 {notice['notice_date']}\n\n"
-        f"🔗 https://alpharesult.in/notices/{notice['beu_notice_id']}\n\n"
+        # f"🔗 https://alpharesult.in/notices/{notice['beu_notice_id']}\n\n"
+        f"🔗 {notice['full_pdf_url']}\n\n"
         f"⚡ Via Alpha Result"
     )
 
