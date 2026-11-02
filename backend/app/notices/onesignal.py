@@ -1,11 +1,15 @@
 import httpx
 from app.config import settings
+from app.notices.utils import clean_pdf_url
+
 
 ONESIGNAL_APP_ID = settings.ONESIGNAL_APP_ID
 ONESIGNAL_API_KEY = settings.ONESIGNAL_API_KEY
 
 
 async def send_push_notification(notice):
+
+    pdf_url = clean_pdf_url(notice.get("full_pdf_url") or notice.get("pdf_link"))
 
     payload = {
         "app_id": ONESIGNAL_APP_ID,
@@ -17,16 +21,10 @@ async def send_push_notification(notice):
         },
 
         "contents": {
-            "en": notice["title"]
+            "en": notice.get("title", "BEU Notice")
         },
 
-        # "url": (
-        #     f"https://alpharesult.in/notices/"
-        #     f"{notice['beu_notice_id']}"
-        # ),
-        "url": (
-            f"{notice['full_pdf_url']}"
-        )
+        "url": pdf_url or "https://alpharesult.in"
     }
 
     headers = {

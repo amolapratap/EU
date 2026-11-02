@@ -4,8 +4,8 @@ from app.utils.datetime import utcnow
 from app.notices.services import fetch_beu_notices
 from app.notices.telegram import send_telegram_notice
 from app.notices.onesignal import send_push_notification
+from app.notices.utils import clean_pdf_url
 import asyncio
-
 
 
 async def check_new_notices():
@@ -28,9 +28,8 @@ async def check_new_notices():
 
             pdf_link = notice.get("link")
 
-            full_pdf_url = (
-                f"https://beu-bih.ac.in/backend/{pdf_link}"
-            )
+            # Clean and encode URL so spaces and special characters do not break Telegram/browser links
+            full_pdf_url = clean_pdf_url(pdf_link)
 
             doc = {
                 "beu_notice_id": beu_notice_id,
