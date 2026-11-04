@@ -76,6 +76,7 @@ async def get_papers_by_subject(subject_id: str):
                 "year": p.get("year"),
                 "name": p.get("name"),
                 "pdf": p.get("paper_pdf"),
+                "paper_pdf": p.get("paper_pdf"),
             })
 
     return {

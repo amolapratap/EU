@@ -103,6 +103,33 @@ export default function PyqDownloadPage() {
     // TEMPORARY APP PROMO: state for pop-up when user clicks other years
     const [promoYearPopup, setPromoYearPopup] = useState<string | null>(null);
 
+    // Desktop return listener: triggers pop-up when user switches back from Play Store new tab
+    useEffect(() => {
+      const handleReturn = () => {
+        try {
+          const pendingYear = sessionStorage.getItem("pending_desktop_promo_year");
+          if (pendingYear) {
+            sessionStorage.removeItem("pending_desktop_promo_year");
+            setPromoYearPopup(pendingYear);
+          }
+        } catch {}
+      };
+
+      const onVisibilityChange = () => {
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          handleReturn();
+        }
+      };
+
+      window.addEventListener("focus", handleReturn);
+      document.addEventListener("visibilitychange", onVisibilityChange);
+
+      return () => {
+        window.removeEventListener("focus", handleReturn);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      };
+    }, []);
+
     const getDevicePlatform = (): "android" | "ios" | "desktop" => {
       if (typeof window === "undefined") return "desktop";
       const ua = navigator.userAgent || navigator.vendor || (window as any).opera || "";
@@ -417,28 +444,29 @@ export default function PyqDownloadPage() {
   }
 
 
-// To convert a link into drive link
+// To convert a link into iframe-friendly preview link
   function getPreviewLink(url: string) {
     if (!url) return "";
   
-    // 🔹 Google Drive link
+    // 🔹 Google Drive link -> requires /preview for embedding
     if (url.includes("drive.google.com")) {
       return url.replace("/view", "/preview");
     }
   
-    // 🔹 Cloudinary or any external PDF
-    return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+    // 🔹 Direct PDF (Cloudinary, etc.)
+    return `${url}#toolbar=0&navpanes=0`;
   }
 
 
-// To view g-drive link as preview & cloudnari as direct
+// To view g-drive link as preview & cloudinary/direct as direct embed
 function getPdfSourceType(url: string) {
   if (!url) return "unknown";
 
   if (url.includes("drive.google.com")) return "gdrive";
-  if (url.includes("res.cloudinary.com")) return "cloudinary";
+  if (url.includes("res.cloudinary.com") || url.includes("cloudinary.com")) return "cloudinary";
+  if (url.toLowerCase().endsWith(".pdf") || url.toLowerCase().includes(".pdf")) return "direct";
 
-  return "other";
+  return "direct";
 }
 
 
@@ -1032,7 +1060,24 @@ function getPdfSourceType(url: string) {
         // - iPhone (ios): load All Years PDF in background + show popup (no auto new tab)
         if (papers.length > 0) {
           const platform = getDevicePlatform();
-          setPromoYearPopup("All Years");
+          if (platform === "desktop") {
+            try {
+              sessionStorage.setItem("pending_desktop_promo_year", "All Years");
+            } catch {}
+            setTimeout(() => {
+              if (typeof document !== "undefined" && document.visibilityState === "visible") {
+                try {
+                  const pendingYear = sessionStorage.getItem("pending_desktop_promo_year");
+                  if (pendingYear) {
+                    sessionStorage.removeItem("pending_desktop_promo_year");
+                    setPromoYearPopup(pendingYear);
+                  }
+                } catch {}
+              }
+            }, 2500);
+          } else {
+            setPromoYearPopup("All Years");
+          }
           if (platform !== "ios") {
             window.open(
               "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
@@ -1074,7 +1119,24 @@ function getPdfSourceType(url: string) {
           // - iPhone (ios): load clicked year PDF in background + show popup (no auto new tab)
           if (i !== latestPaperIndex) {
             const platform = getDevicePlatform();
-            setPromoYearPopup(String(p.year));
+            if (platform === "desktop") {
+              try {
+                sessionStorage.setItem("pending_desktop_promo_year", String(p.year));
+              } catch {}
+              setTimeout(() => {
+                if (typeof document !== "undefined" && document.visibilityState === "visible") {
+                  try {
+                    const pendingYear = sessionStorage.getItem("pending_desktop_promo_year");
+                    if (pendingYear) {
+                      sessionStorage.removeItem("pending_desktop_promo_year");
+                      setPromoYearPopup(pendingYear);
+                    }
+                  } catch {}
+                }
+              }, 2500);
+            } else {
+              setPromoYearPopup(String(p.year));
+            }
             if (platform !== "ios") {
               window.open(
                 "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
@@ -1158,13 +1220,13 @@ function getPdfSourceType(url: string) {
                     
                     
                     // const previewLink = p.pdf.replace("/view", "/preview");
-                    const previewLink = getPreviewLink(p.pdf);
-                    const type = getPdfSourceType(p.pdf);
+                    const pdfUrl = (p.pdf || p.paper_pdf || "").trim();
+                    const previewLink = getPreviewLink(pdfUrl);
+                    const type = getPdfSourceType(pdfUrl);
 
                     return (
                   <div
                           key={p.id}
-                          // key={`${p.pdf}`}
                           ref={(el) => {
                             if (el) viewerRefs.current[p.id] = el;
                           }}
@@ -1174,7 +1236,7 @@ function getPdfSourceType(url: string) {
                   {/* HEADER */}
                   <div className="px-3 py-2 bg-slate-50 flex flex-wrap justify-between gap-2 text-sm items-center">
 
-                        <span className="font-medium text-slate-700">{p.year} – {p.name}</span>
+                        <span className="font-medium text-slate-700">{p.year ? `${p.year} – ` : ""}{p.name || s.full_name || s.name}</span>
 
                     <div className="flex items-center gap-2">
 
@@ -1192,44 +1254,44 @@ function getPdfSourceType(url: string) {
                           </a>
                         )}
 
-                        {/* --------------------Dowload button for one paper ------------------ */}
-                        <button
-                          onClick={async () => {
-                            try {
 
-                              // g-drive download
-                              if (type=='gdrive'){
-                                  window.open(
-                                    getDownloadLink(p?.pdf, `${p.name}_${p.year}`),
-                                    "_blank"
-                                  );
-                                  return;
-                                }
-                            
-                                // cloudnari download
-                              const res = await fetch(getDownloadLink(p?.pdf, `${p.name}_${p.year}`));
-                              const blob = await res.blob();
+                        {/* --------------------Download button for one paper ------------------ */}
+                        {pdfUrl && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                if (type === 'gdrive'){
+                                    window.open(
+                                      getDownloadLink(pdfUrl, `${p.name}_${p.year}`),
+                                      "_blank"
+                                    );
+                                    return;
+                                  }
+                              
+                                const res = await fetch(getDownloadLink(pdfUrl, `${p.name}_${p.year}`));
+                                const blob = await res.blob();
 
-                              const url = window.URL.createObjectURL(blob);
+                                const url = window.URL.createObjectURL(blob);
 
-                              const link = document.createElement("a");
-                              link.href = url;
-                              link.download = `alpha_result_${p.name}_${p.year}.pdf`;
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.download = `alpha_result_${p.name}_${p.year}.pdf`;
 
-                              document.body.appendChild(link);
-                              link.click();
+                                document.body.appendChild(link);
+                                link.click();
 
-                              link.remove();
-                              window.URL.revokeObjectURL(url);
-                            } catch (err) {
-                              console.error("Download failed", err);
-                              alert("Download failed");
-                            }
-                          }}
-                          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                        >
-                          Download
-                        </button>
+                                link.remove();
+                                window.URL.revokeObjectURL(url);
+                              } catch (err) {
+                                console.error("Download failed", err);
+                                alert("Download failed");
+                              }
+                            }}
+                            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                          >
+                            Download
+                          </button>
+                        )}
 
                       {/* FULLSCREEN BUTTON */}
                       <button
@@ -1242,54 +1304,31 @@ function getPdfSourceType(url: string) {
                     </div>
                   </div>
 
-                  {/* PDF */}
-                  {/* <iframe
+                {/* To view the paper */}
+                {!pdfUrl ? (
+                  <div className="text-center p-6 border rounded-lg bg-slate-50">
+                    <p className="text-slate-500 text-sm font-medium">
+                      PDF preview is not available for this paper yet.
+                    </p>
+                    <p className="text-slate-400 text-xs mt-1">
+                      Paper questions and solutions are updated regularly.
+                    </p>
+                  </div>
+                ) : type === "gdrive" ? (
+                  <iframe
                     src={previewLink}
-                    className="w-full h-[800px]"
+                    className="w-full h-[800px] max-w-[1500px] rounded border"
                     loading="lazy"
-                  /> */}
-
-
-                                  {/* <iframe
-                                  src={previewLink}
-                                  className="w-full h-[800px] rounded"
-                                  loading="lazy"
-                                />
-
-                                <PdfViewer url={p.pdf} /> */}
-
-                
-          
-{/* To view the paper */}
-                {type === "gdrive" ? (
-  <iframe
-    src={previewLink}
-    className="w-full h-[800px] max-w-[1500px] rounded"
-    loading="lazy"
-  />
-) : type === "cloudinary" ? (
-  // <PdfViewer key={p.pdf} url={p.pdf} />
-  <iframe
-  key={p.pdf}
-  // src={p.pdf}
-  src={`https://docs.google.com/gview?url=${encodeURIComponent(p.pdf)}&embedded=true`}
-  className="w-full h-[800px] rounded"
-  loading="lazy"
-/>
-) : (
-  <div  className="text-center p-4 border rounded">
-    <p className="text-slate-400 text-sm">
-      Preview not supported
-    </p>
-    <a
-      href={p.paper_pdf}
-      target="_blank"
-      className="text-indigo-400 underline"
-    >
-      Open PDF
-    </a>
-  </div>
-)}
+                    allow="autoplay"
+                  />
+                ) : (
+                  <iframe
+                    key={pdfUrl}
+                    src={`${pdfUrl}#toolbar=0&navpanes=0`}
+                    className="w-full h-[800px] rounded border"
+                    loading="lazy"
+                  />
+                )}
 
 
                                     

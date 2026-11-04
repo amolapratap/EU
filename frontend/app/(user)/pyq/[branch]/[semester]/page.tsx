@@ -69,6 +69,33 @@ const handleSubjectChange = (subject: any) => {
   // TEMPORARY APP PROMO: state for pop-up when user clicks other years
   const [promoYearPopup, setPromoYearPopup] = useState<string | null>(null);
 
+  // Desktop return listener: triggers pop-up when user switches back from Play Store new tab
+  useEffect(() => {
+    const handleReturn = () => {
+      try {
+        const pendingYear = sessionStorage.getItem("pending_desktop_promo_year");
+        if (pendingYear) {
+          sessionStorage.removeItem("pending_desktop_promo_year");
+          setPromoYearPopup(pendingYear);
+        }
+      } catch {}
+    };
+
+    const onVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        handleReturn();
+      }
+    };
+
+    window.addEventListener("focus", handleReturn);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleReturn);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
+
   const getDevicePlatform = (): "android" | "ios" | "desktop" => {
     if (typeof window === "undefined") return "desktop";
     const ua = navigator.userAgent || navigator.vendor || (window as any).opera || "";
@@ -91,7 +118,25 @@ const handleSubjectChange = (subject: any) => {
 
     if (isNonLatest) {
       const platform = getDevicePlatform();
-      setPromoYearPopup(String(selectedPaper.year));
+
+      if (platform === "desktop") {
+        try {
+          sessionStorage.setItem("pending_desktop_promo_year", String(selectedPaper.year));
+        } catch {}
+        setTimeout(() => {
+          if (typeof document !== "undefined" && document.visibilityState === "visible") {
+            try {
+              const pendingYear = sessionStorage.getItem("pending_desktop_promo_year");
+              if (pendingYear) {
+                sessionStorage.removeItem("pending_desktop_promo_year");
+                setPromoYearPopup(pendingYear);
+              }
+            } catch {}
+          }
+        }, 2500);
+      } else {
+        setPromoYearPopup(String(selectedPaper.year));
+      }
 
       if (platform !== "ios") {
         window.open(
@@ -113,7 +158,26 @@ const handleSubjectChange = (subject: any) => {
   const handleDownloadAllYearsPdf = (pdfUrl: string) => {
     if (papers.length > 0) {
       const platform = getDevicePlatform();
-      setPromoYearPopup("All Years");
+
+      if (platform === "desktop") {
+        try {
+          sessionStorage.setItem("pending_desktop_promo_year", "All Years");
+        } catch {}
+        setTimeout(() => {
+          if (typeof document !== "undefined" && document.visibilityState === "visible") {
+            try {
+              const pendingYear = sessionStorage.getItem("pending_desktop_promo_year");
+              if (pendingYear) {
+                sessionStorage.removeItem("pending_desktop_promo_year");
+                setPromoYearPopup(pendingYear);
+              }
+            } catch {}
+          }
+        }, 2500);
+      } else {
+        setPromoYearPopup("All Years");
+      }
+
       if (platform !== "ios") {
         window.open(
           "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
