@@ -69,11 +69,11 @@ export default function AppDownloadModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
     >
       <div
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-indigo-100 transform transition-all animate-scale-up"
+        className="relative w-full max-w-md max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden border border-indigo-100 transform transition-all animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Decorative Gradient Header */}
-        <div className="relative bg-gradient-to-br from-[#5B2EBD] via-[#6D3FD3] to-[#8C52FF] p-6 text-white text-center pb-8 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#5B2EBD] via-[#6D3FD3] to-[#8C52FF] p-6 text-white text-center pb-8 overflow-hidden shrink-0">
           {/* Subtle background circles */}
           <div className="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-400/20 rounded-full blur-xl translate-y-1/2 -translate-x-1/4" />
@@ -116,7 +116,7 @@ export default function AppDownloadModal({
         </div>
 
         {/* Modal Body with Features */}
-        <div className="p-6 pt-5 bg-white space-y-4">
+        <div className="p-6 pt-5 bg-white space-y-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-2.5 text-left">
             <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
               <Zap className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />

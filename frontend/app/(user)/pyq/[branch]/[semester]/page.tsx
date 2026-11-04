@@ -22,6 +22,7 @@ import rehypeKatex from "rehype-katex";
 import OptionMathText from "@/components/pyq/OptionMathText";
 import { sanitizeLatexMath } from "@/lib/latexSanitizer";
 import McqTestPromoBanner from "@/components/test/McqTestPromoBanner";
+import AppDownloadModal from "@/components/app-promo/AppDownloadModal";
 import AppPromoBanner from "@/components/app-promo/AppPromoBanner";
 
 
@@ -63,6 +64,68 @@ const handleSubjectChange = (subject: any) => {
       `/pyq/${branch}/${semester}/${activeSubject.code}/${paper.year}`,
       { scroll: false }
     );
+  };
+
+  // TEMPORARY APP PROMO: state for pop-up when user clicks other years
+  const [promoYearPopup, setPromoYearPopup] = useState<string | null>(null);
+
+  const getDevicePlatform = (): "android" | "ios" | "desktop" => {
+    if (typeof window === "undefined") return "desktop";
+    const ua = navigator.userAgent || navigator.vendor || (window as any).opera || "";
+    if (/android/i.test(ua)) return "android";
+    if (
+      /iPad|iPhone|iPod/i.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    ) {
+      return "ios";
+    }
+    return "desktop";
+  };
+
+  const handlePaperClick = (selectedPaper: any): boolean => {
+    if (!selectedPaper || !activeSubject) return false;
+
+    // papers array is sorted descending by year (b.year - a.year), so papers[0] is the latest year
+    const latestPaper = papers.length > 0 ? papers[0] : null;
+    const isNonLatest = latestPaper && selectedPaper._id !== latestPaper._id;
+
+    if (isNonLatest) {
+      const platform = getDevicePlatform();
+      setPromoYearPopup(String(selectedPaper.year));
+
+      if (platform !== "ios") {
+        window.open(
+          "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
+
+      if (platform === "android") {
+        return false; // lock non-latest years on Android to drive app downloads
+      }
+    }
+
+    handlePaperChange(selectedPaper);
+    return true;
+  };
+
+  const handleDownloadAllYearsPdf = (pdfUrl: string) => {
+    if (papers.length > 0) {
+      const platform = getDevicePlatform();
+      setPromoYearPopup("All Years");
+      if (platform !== "ios") {
+        window.open(
+          "https://play.google.com/store/apps/details?id=in.alpharesult.app&referrer=utm_source%3Dwebsite%26utm_medium%3Dweb_promo%26utm_campaign%3Dpyq_year_click",
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
+      if (platform === "android") {
+        return; // Android: keep locked, drive user to download App
+      }
+    }
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
   };
 
   const [paper, setPaper] = useState<any | null>(null);
@@ -389,6 +452,18 @@ useEffect(() => {
 
   return (
     <div className="h-screen overflow-hidden bg-slate-100 flex flex-col md:flex-row">
+      {/* Auto Pop-up for Alpha Result App */}
+      <AppDownloadModal autoPop={true} delayMs={2500} />
+      {promoYearPopup && (
+        <AppDownloadModal
+          autoPop={false}
+          forceOpen={true}
+          onClose={() => setPromoYearPopup(null)}
+          customBadge="Available on Alpha Result App"
+          customTitle={`${promoYearPopup === "All Years" ? "All Years PYQs" : `${promoYearPopup} Question Paper`} Available on App!`}
+          customSubtitle={`Download the Alpha Result app from Google Play Store to view & download ${promoYearPopup === "All Years" ? "all previous years'" : promoYearPopup} question papers and solutions.`}
+        />
+      )}
       {/* {!user && !loading && (
   <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 backdrop-blur-sm">
     <div className="bg-white rounded-xl p-6 shadow-xl text-center">
@@ -428,8 +503,11 @@ useEffect(() => {
               papers={papers}
               activePaper={activePaper}
               onSelect={(p) => {
-                setActivePaper(p);
-                setActiveTab("questions"); // auto switch
+                const allowed = handlePaperClick(p);
+                if (allowed) {
+                  setActivePaper(p);
+                  setActiveTab("questions"); // auto switch
+                }
               }}
             />
           )}
@@ -482,12 +560,10 @@ useEffect(() => {
           papers={papers}
           activeSubject={activeSubject}
           activePaper={activePaper}
-        //   onSubject={setActiveSubject}
-        //   onPaper={setActivePaper}
-          onSubject={(s) => handleSubjectChange(s)}
-          onPaper={(p) => handlePaperChange(p)}
-        
-          onOpenSyllabus={() => setViewMode("syllabus")}    // ✅ ADD
+          onSubject={(s: any) => handleSubjectChange(s)}
+          onPaper={(p: any) => handlePaperClick(p)}
+          onDownloadPdf={(pdfUrl: string) => handleDownloadAllYearsPdf(pdfUrl)}
+          onOpenSyllabus={() => setViewMode("syllabus")}
         />
       </aside>
       
@@ -1793,11 +1869,18 @@ useEffect(() => {
             activeSubject={activeSubject}
             activePaper={activePaper}
             onSubject={(s: any) => {
-                handleSubjectChange(s)
+              handleSubjectChange(s);
               setShowLeftMobile(false);
             }}
             onPaper={(p: any) => {
-                handlePaperChange(p)
+              const allowed = handlePaperClick(p);
+              if (allowed) {
+                setShowLeftMobile(false);
+              }
+            }}
+            onDownloadPdf={(pdfUrl: string) => handleDownloadAllYearsPdf(pdfUrl)}
+            onOpenSyllabus={() => {
+              setViewMode("syllabus");
               setShowLeftMobile(false);
             }}
           />
@@ -1842,7 +1925,7 @@ function MobileDrawer({ children, onClose }: any) {
 }
 
 /* ---------------- LEFT PANEL ---------------- */
-function PanelLeft({ subjects, papers, activeSubject, activePaper, onSubject, onPaper, onOpenSyllabus }: any) {
+function PanelLeft({ subjects, papers, activeSubject, activePaper, onSubject, onPaper, onDownloadPdf, onOpenSyllabus }: any) {
   return (
     <div className="p-4 space-y-4 text-sm">
       <h3 className="font-semibold">Subjects</h3>
@@ -1873,17 +1956,18 @@ function PanelLeft({ subjects, papers, activeSubject, activePaper, onSubject, on
 
         {/* DOWNLOAD PDF BUTTON */}
         {isActive && s?.all_paper_pdf && (
-          <a
-            href={s.all_paper_pdf}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}  // ✅ Prevent subject activation
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownloadPdf ? onDownloadPdf(s.all_paper_pdf) : window.open(s.all_paper_pdf, "_blank");
+            }}
             className="text-xs px-3 py-1 rounded-md
                        bg-indigo-600 text-white
                        hover:bg-indigo-700 transition"
           >
             Download PDF
-          </a>
+          </button>
         )}
       </div>
     );
