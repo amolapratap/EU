@@ -37,6 +37,8 @@ type GooglePlayButtonProps = {
   size?: "sm" | "md" | "lg";
   theme?: "dark" | "light" | "gradient";
   variant?: "dark" | "light" | "gradient";
+  href?: string;
+  onClick?: () => void;
 };
 
 export default function GooglePlayButton({
@@ -44,6 +46,8 @@ export default function GooglePlayButton({
   size = "md",
   theme,
   variant,
+  href = PLAY_STORE_URL,
+  onClick,
 }: GooglePlayButtonProps) {
   const activeTheme = theme || variant || "dark";
   const sizeClasses = {
@@ -67,7 +71,8 @@ export default function GooglePlayButton({
 
   return (
     <a
-      href={PLAY_STORE_URL}
+      href={href}
+      onClick={onClick}
       target="_blank"
       rel="noopener noreferrer"
       className={`inline-flex items-center transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] ${sizeClasses} ${themeClasses} ${className}`}
