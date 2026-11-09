@@ -35,7 +35,7 @@ async def login_route(body: LoginModel):
 
     return result
 
-
+# To initiate the forgot password process
 @router.post("/forgot-password")
 async def forgot_password(body: dict):
     email = body.get("email")
@@ -47,7 +47,7 @@ async def forgot_password(body: dict):
 
     return result
 
-
+# To reset the password
 @router.post("/reset-password")
 async def reset_password(body: dict):
     email = body.get("email")
