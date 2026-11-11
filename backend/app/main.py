@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .database import connect_to_mongo, close_mongo_connection
+from .database import connect_to_mongo, close_mongo_connection, ensure_user_indexes
 
 # Import routers (for now empty, we add later)
 # from app.public.routes import router as public_router
@@ -81,6 +81,7 @@ scheduler.add_job(
 @app.on_event("startup")
 async def startup_event():
     await connect_to_mongo()
+    await ensure_user_indexes()
     await ensure_elective_indexes()
     scheduler.start()
     print("Scheduler started")

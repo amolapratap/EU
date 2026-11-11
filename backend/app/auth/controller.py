@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, timedelta
 import numbers
 from fastapi import HTTPException
+from pymongo.errors import DuplicateKeyError
 
 from app.database import db_instance
 from app.utils.email_sender import send_otp_email
@@ -20,6 +21,7 @@ async def user_exists(email: str) -> bool:
 # ======================================================
 async def initiate_signup(body):
     email = validate_user_email(body.email)
+    email = email.lower()
     if await user_exists(email):
         return {"success": False, "message": "Email already registered"}
 
@@ -58,6 +60,8 @@ async def initiate_signup(body):
 # 3) VERIFY OTP → Move email_otps → users
 # ======================================================
 async def verify_otp(email, otp):
+    email = validate_user_email(email)
+    email = email.lower()
     record = await db_instance.db.email_otps.find_one(
         {"email": email, "otp": otp}
     )
@@ -80,7 +84,11 @@ async def verify_otp(email, otp):
         "created_at": datetime.now(timezone.utc)
     }
 
-    result = await db_instance.db.users.insert_one(user_doc)
+    try:
+        result = await db_instance.db.users.insert_one(user_doc)
+    except DuplicateKeyError:
+        await db_instance.db.email_otps.delete_many({"email": email})
+        return {"success": False, "message": "Email already registered"}
 
     # Delete all OTP records for this email
     await db_instance.db.email_otps.delete_many({"email": email})
@@ -96,6 +104,8 @@ async def verify_otp(email, otp):
 # LOGIN (User + Admin)
 # ======================================================
 async def login_user(email, password):
+    email = validate_user_email(email)
+    email = email.lower()
     user = await db_instance.db.users.find_one({"email": email})
 
     if not user:
@@ -132,7 +142,9 @@ async def send_otp(email):
 
     if not email:
         return {"success": True, "message": "OTP was sent on your email"}
-
+    
+    email = validate_user_email(email)
+    email = email.lower()
     user = await db_instance.db.users.find_one({"email": email})
 
     # Always return success (anti-enumeration)
@@ -169,6 +181,9 @@ async def send_otp(email):
     }
 
 async def change_password(email, otp, new_password):
+    email = validate_user_email(email)
+    email = email.lower()
+
 
     if not all([email, otp, new_password]):
         raise HTTPException(status_code=400, detail="Invalid request")
