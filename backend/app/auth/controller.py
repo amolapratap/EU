@@ -19,10 +19,11 @@ async def user_exists(email: str) -> bool:
 # 2) SIGNUP: Save to email_otps only
 # ======================================================
 async def initiate_signup(body):
-    if await user_exists(body.email):
+    email = validate_user_email(body.email)
+    if await user_exists(email):
         return {"success": False, "message": "Email already registered"}
 
-    email = validate_user_email(body.email)
+    
 
     otp = generate_otp()
 
