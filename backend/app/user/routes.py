@@ -1,8 +1,10 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from app.auth.dependencies import user_required
 from app.user.controllers import *
 from app.auth.utils import get_current_user
+from app.auth.models import DeleteAccountModel
+from app.auth.controller import soft_delete_user_account
 
 router = APIRouter()
 
@@ -15,9 +17,16 @@ async def update_semester(body: dict, user=Depends(get_current_user)):
     return await update_semester_ctrl(user["user_id"], body)
 
 @router.put("/account/edit", dependencies=[Depends(user_required)])
-async def update_semester(body: dict, user=Depends(get_current_user)):
+async def update_account(body: dict, user=Depends(get_current_user)):
     return await update_account_ctrl(user["user_id"], body)
 
+@router.delete("/account", dependencies=[Depends(user_required)])
+async def delete_account(body: DeleteAccountModel = None, user=Depends(get_current_user)):
+    body = body or DeleteAccountModel()
+    result = await soft_delete_user_account(user["user_id"], body)
+    if not result.get("success", False):
+        raise HTTPException(status_code=400, detail=result.get("message", "Failed to delete account"))
+    return result
 
 
 @router.get("/semester", dependencies=[Depends(user_required)])

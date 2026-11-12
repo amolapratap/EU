@@ -9,10 +9,19 @@ from fastapi import HTTPException
 # ---------------- GET ACCOUNT ----------------
 async def get_account_ctrl(user_id):
     user = await db_instance.db.users.find_one(
-        {"_id": ObjectId(user_id)},
-        {"password_hash": 0}
+        {
+            "_id": ObjectId(user_id),
+            "is_deleted": {"$ne": True}  # Safely handles legacy users who lack this field
+        }
     )
-    return {"success": True, "data": mongo_to_json(user)}
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found or deleted")
+    
+    has_password = bool(user.get("password_hash"))
+    user.pop("password_hash", None)
+    data = mongo_to_json(user)
+    data["has_password"] = has_password
+    return {"success": True, "data": data}
 
 # ---------------- UPDATE SEMESTER ----------------
 async def update_semester_ctrl(user_id, body):
@@ -21,8 +30,11 @@ async def update_semester_ctrl(user_id, body):
     if not semester:
         raise HTTPException(status_code=400, detail="Semester is required")
 
-    await db_instance.db.users.update_one(
-        {"_id": ObjectId(user_id)},
+    res = await db_instance.db.users.update_one(
+        {
+            "_id": ObjectId(user_id),
+            "is_deleted": {"$ne": True}
+        },
         {
             "$set": {
                 "semester": semester,
@@ -30,6 +42,9 @@ async def update_semester_ctrl(user_id, body):
             }
         }
     )
+
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Account not found or deleted")
 
     return {"success": True, "message": "Semester updated successfully"}
 
@@ -42,8 +57,11 @@ async def update_account_ctrl(user_id, body):
     if not branch:
         raise HTTPException(status_code=400, detail="Branch is required")
 
-    await db_instance.db.users.update_one(
-        {"_id": ObjectId(user_id)},
+    res = await db_instance.db.users.update_one(
+        {
+            "_id": ObjectId(user_id),
+            "is_deleted": {"$ne": True}
+        },
         {
             "$set": {
                 "semester": semester,
@@ -52,6 +70,9 @@ async def update_account_ctrl(user_id, body):
             }
         }
     )
+
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Account not found or deleted")
 
     return {"success": True, "message": "Semester updated successfully"}
 

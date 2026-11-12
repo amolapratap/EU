@@ -1,11 +1,12 @@
 from datetime import datetime, timezone, timedelta
 import numbers
+from bson import ObjectId
 from fastapi import HTTPException
 from pymongo.errors import DuplicateKeyError
 
 from app.database import db_instance
 from app.utils.email_sender import send_otp_email
-from .utils import hash_password,hash_otp, verify_password, generate_otp, create_access_token, validate_user_email
+from .utils import hash_password, hash_otp, verify_password, generate_otp, create_access_token, validate_user_email
 
 
 # ======================================================
@@ -13,7 +14,8 @@ from .utils import hash_password,hash_otp, verify_password, generate_otp, create
 # ======================================================
 async def user_exists(email: str) -> bool:
     user = await db_instance.db.users.find_one({"email": email})
-    return user is not None
+    # If the email belongs to a deleted account, it is considered free
+    return user is not None and user.get("is_deleted") is not True
 
 
 # ======================================================
@@ -24,8 +26,6 @@ async def initiate_signup(body):
     email = email.lower()
     if await user_exists(email):
         return {"success": False, "message": "Email already registered"}
-
-    
 
     otp = generate_otp()
 
@@ -81,6 +81,8 @@ async def verify_otp(email, otp):
         "role": "user",
         "login_type": "email",
         "is_verified": True,
+        "is_deleted": False,
+        "is_active": True,
         "created_at": datetime.now(timezone.utc)
     }
 
@@ -111,6 +113,11 @@ async def login_user(email, password):
     if not user:
         return {"success": False, "message": "Invalid credentials"}
 
+    # Safe check: existing users in DB do not have is_deleted / is_active fields,
+    # so we ONLY block if is_deleted is explicitly True or is_active is explicitly False.
+    if user.get("is_deleted") is True or user.get("is_active") is False:
+        return {"success": False, "message": "This account is inactive or has been deleted"}
+
     if not verify_password(password, user["password_hash"]):
         return {"success": False, "message": "Wrong Password"}
 
@@ -139,7 +146,6 @@ async def login_user(email, password):
 
 
 async def send_otp(email):
-
     if not email:
         return {"success": True, "message": "OTP was sent on your email"}
     
@@ -148,7 +154,8 @@ async def send_otp(email):
     user = await db_instance.db.users.find_one({"email": email})
 
     # Always return success (anti-enumeration)
-    if not user:
+    # If user not found or account was deleted, return success without generating OTP
+    if not user or user.get("is_deleted") is True or user.get("is_active") is False:
         return {"success": True, "message": "OTP was sent on your email"}
 
     # 🔒 Invalidate previous OTPs
@@ -184,19 +191,17 @@ async def change_password(email, otp, new_password):
     email = validate_user_email(email)
     email = email.lower()
 
-
     if not all([email, otp, new_password]):
         raise HTTPException(status_code=400, detail="Invalid request")
 
     user = await db_instance.db.users.find_one({"email": email})
-    if not user:
+    if not user or user.get("is_deleted") is True or user.get("is_active") is False:
         raise HTTPException(status_code=400, detail="Invalid email, Create new account if not registered")
 
     otp_hash = hash_otp(otp)
 
     record = await db_instance.db.password_otps.find_one({
         "user_id": user["_id"],
-        # "otp_hash": otp_hash,           # gives query result even user enterd wrong otp
         "used": False
     })
 
@@ -242,6 +247,64 @@ async def change_password(email, otp, new_password):
         {"$set": {"used": True}}
     )
 
-
     return {"success": True, "message": "Password reset successful"}
 
+
+# ======================================================
+# SOFT-DELETE USER ACCOUNT
+# ======================================================
+async def soft_delete_user_account(user_id: str, body):
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    user = await db_instance.db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Safe check: only blocked if already marked deleted
+    if user.get("is_deleted") is True:
+        return {"success": False, "message": "Account is already deleted"}
+
+    # 1. Re-authenticate: If user signed up with password, verify it
+    if user.get("password_hash"):
+        password = getattr(body, "password", None) if hasattr(body, "password") else body.get("password") if isinstance(body, dict) else None
+        if not password:
+            raise HTTPException(status_code=400, detail="Password is required to confirm account deletion")
+        if not verify_password(password, user["password_hash"]):
+            raise HTTPException(status_code=400, detail="Incorrect password. Failed to delete Account.")
+
+    now = datetime.now(timezone.utc)
+    original_email = user.get("email", "")
+
+    # 2. Free up email address so user can re-register in future
+    # and to prevent collision with MongoDB unique index on users.email
+    timestamp_prefix = int(now.timestamp())
+    freed_email = f"deleted_{timestamp_prefix}_{original_email}"
+
+    reason = getattr(body, "reason", None) if hasattr(body, "reason") else body.get("reason") if isinstance(body, dict) else None
+
+    # 3. Soft-delete (keeps mobile and reg_no if present)
+    await db_instance.db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {
+            "$set": {
+                "is_deleted": True,
+                "is_active": False,
+                "deleted_at": now,
+                "original_email": original_email,
+                "email": freed_email,
+                "deletion_reason": reason or "User requested deletion",
+                "updated_at": now,
+            }
+        }
+    )
+
+    # 4. Cascade cleanup of OTPs
+    await db_instance.db.password_otps.delete_many({"user_id": ObjectId(user_id)})
+    if original_email:
+        await db_instance.db.email_otps.delete_many({"email": original_email})
+
+    return {
+        "success": True,
+        "message": "Your account has been deleted successfully."
+    }

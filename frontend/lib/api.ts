@@ -151,9 +151,10 @@ export async function apiPut(path: string, data: any) {
   });
 }
 
-export async function apiDelete(path: string) {
+export async function apiDelete(path: string, data?: any) {
   return apiFetch(path, {
     method: "DELETE",
+    ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
   });
 }
 
@@ -163,6 +164,3 @@ export async function apiPatch(path: string, data: any) {
     body: JSON.stringify(data)
   });
 }
-
-
-

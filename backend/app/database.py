@@ -1,4 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import DuplicateKeyError, OperationFailure
 from .config import settings
 
 class Database:
@@ -19,13 +20,22 @@ async def connect_to_mongo():
 async def ensure_user_indexes():
     """
     Prevent two user documents from storing the same email.
-    Fails if the collection already has duplicate emails — clean those first.
+    If duplicates already exist, log them and keep the server running.
     """
-    await db_instance.db.users.create_index(
-        "email",
-        unique=True,
-        name="users_email_unique_idx",
-    )
+    try:
+        await db_instance.db.users.create_index(
+            "email",
+            unique=True,
+            name="users_email_unique_idx",
+        )
+    except (DuplicateKeyError, OperationFailure) as e:
+        print(
+            "⚠️  Unique index on users.email was not created because "
+            "duplicate emails already exist.\n"
+            "    Inspect:  python backend/scripts/fix_duplicate_user_emails.py\n"
+            "    Fix:      python backend/scripts/fix_duplicate_user_emails.py --apply\n"
+            f"    MongoDB:  {e}"
+        )
 
 async def close_mongo_connection():
     """
