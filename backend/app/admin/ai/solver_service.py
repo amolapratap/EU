@@ -266,9 +266,9 @@ Guidelines for the solution:
 
 
 CANDIDATE_MODELS = [
-    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
     "gemini-flash-lite-latest",
-    "gemini-3-flash-preview",
+    "gemini-3.5-flash",
 ]
 
 
@@ -353,7 +353,7 @@ async def solve_objective_question(
         }
     if not pass1 and not pass2:
         # Fallback to model 3 if both 1 & 2 failed
-        model_3 = CANDIDATE_MODELS[2] if len(CANDIDATE_MODELS) > 2 else "gemini-3-flash-preview"
+        model_3 = CANDIDATE_MODELS[2] if len(CANDIDATE_MODELS) > 2 else "gemini-3.5-flash"
         pass3 = await _execute_single_objective_pass(client, model_3, user_prompt, timeout=25.0)
         if pass3:
             return {
@@ -381,7 +381,7 @@ async def solve_objective_question(
 
     # Step 3: Disagreement -> Tie-Breaker Pass 3
     logger.warning(f"MCQ Dual-Check MISMATCH: Pass 1={idx1}, Pass 2={idx2}. Triggering independent Tie-Breaker Pass 3...")
-    model_3 = CANDIDATE_MODELS[2] if len(CANDIDATE_MODELS) > 2 else "gemini-3-flash-preview"
+    model_3 = CANDIDATE_MODELS[2] if len(CANDIDATE_MODELS) > 2 else "gemini-3.5-flash"
     pass3 = await _execute_single_objective_pass(client, model_3, user_prompt, timeout=25.0)
     idx3 = pass3.get("correct_index") if isinstance(pass3, dict) else None
 

@@ -99,10 +99,10 @@ async def extract_questions_from_pdf(
     contents.append("Extract all questions from the above question paper pages following the system instructions.")
 
     # Call Gemini
-    # Primary: gemini-3.5-flash-lite, fallback: gemini-flash-lite-latest, gemini-3-flash-preview, etc.
+    # Primary: gemini-3.8-flash, fallback: gemini-flash-lite-latest, gemini-3.5-flash, etc.
     response = None
     last_err = None
-    for model_name in ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3-flash-preview", "gemini-3.5-flash", "gemini-3.8-flash"]:
+    for model_name in ["gemini-3.8-flash", "gemini-flash-lite-latest", "gemini-3.5-flash", "gemini-3.5-flash", "gemini-3.8-flash"]:
         try:
             logger.info(f"Attempting question extraction using model: {model_name}")
             response = client.models.generate_content(
