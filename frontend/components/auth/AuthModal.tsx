@@ -78,14 +78,26 @@ export function AuthModalProvider({ children }: any) {
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center
-                     bg-black/50 backdrop-blur-sm animate-fadeIn"
+                     bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
           onClick={handleOverlayClick}
         >
           <div
             ref={modalRef}
-            className="modal-glass w-[380px] rounded-xl shadow-xl animate-scaleIn"
+            className="modal-glass relative w-full max-w-[400px] rounded-2xl shadow-2xl animate-scaleIn overflow-hidden"
           >
-            <div className="max-h-[80vh] overflow-y-auto p-6">
+            {/* MOBILE-FRIENDLY CLOSE BUTTON */}
+            <button
+              type="button"
+              onClick={hide}
+              className="absolute right-3.5 top-3.5 z-20 text-slate-400 hover:text-slate-600 bg-white/40 hover:bg-white/80 rounded-full p-1.5 transition"
+              aria-label="Close modal"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            <div className="max-h-[85vh] overflow-y-auto p-5 sm:p-6">
               {/* ---------------- LOGIN ---------------- */}
               {view === "login" && (
                 <LoginForm
