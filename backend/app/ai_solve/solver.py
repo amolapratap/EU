@@ -13,9 +13,11 @@ from app.utils.logger import logger
 from .prompts import STUDENT_OBJECTIVE_PROMPT, STUDENT_SUBJECTIVE_PROMPT
 
 CANDIDATE_MODELS = [
-    "gemini-3.8-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite-preview",
     "gemini-3.5-flash",
-    "gemini-flash-latest",
+    "gemini-3.8-flash",
 ]
 
 
@@ -126,7 +128,7 @@ async def solve_objective_for_student(
     formatted_opts = "\n".join([f"({chr(65 + i)}) {opt}" for i, opt in enumerate(options)])
     user_prompt = f"Question:\n{question_text}\n\nOptions:\n{formatted_opts}"
 
-    last_error = None
+    error_records = []
     for model_name in CANDIDATE_MODELS:
         try:
             res = await asyncio.wait_for(
@@ -150,10 +152,10 @@ async def solve_objective_for_student(
                         "explanation": parsed.get("explanation", ""),
                     }
         except Exception as e:
-            last_error = e
+            error_records.append(f"{model_name}: {e}")
             logger.warning(f"Student objective pass failed on {model_name}: {e}")
 
-    raise RuntimeError(f"Objective solver failed across all candidate models: {last_error}")
+    raise RuntimeError(f"Objective solver failed across all candidate models: {'; '.join(error_records)}")
 
 
 async def solve_subjective_for_student(
@@ -180,7 +182,7 @@ async def solve_subjective_for_student(
     user_prompt += f"Question:\n{question_text}"
 
     parsed_data = None
-    last_error = None
+    error_records = []
 
     for model_name in CANDIDATE_MODELS:
         try:
@@ -203,11 +205,11 @@ async def solve_subjective_for_student(
                     parsed_data = parsed
                     break
         except Exception as e:
-            last_error = e
+            error_records.append(f"{model_name}: {e}")
             logger.warning(f"Student subjective pass failed on {model_name}: {e}")
 
     if not parsed_data:
-        raise RuntimeError(f"Subjective solver failed across all models: {last_error}")
+        raise RuntimeError(f"Subjective solver failed across all models: {'; '.join(error_records)}")
 
     solution_blocks: List[Dict] = []
     solution_text = parsed_data.get("solution_text", "").strip()
