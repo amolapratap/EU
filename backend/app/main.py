@@ -19,6 +19,7 @@ from app.admin.blog.routes import router as admin_blog_router
 from app.public2.blog.routes import router as public_blog_router
 from app.electives.routes import router as v2_router
 from app.electives.controllers import ensure_elective_indexes
+from app.ai_solve.routes import router as ai_solve_router
 
 
 
@@ -119,5 +120,9 @@ app.include_router(public_blog_router, prefix="/api/public/blog", tags=["Public 
 app.include_router(v2_router, prefix="/api/v2", tags=["V2"])
 app.include_router(v2_router, prefix="/api/public/v2", tags=["V2 Public"])
 app.include_router(v2_router, prefix="/user/v2", tags=["V2 User"])
+
+# AI STUDENT SOLVE ROUTER
+app.include_router(ai_solve_router, prefix="/api/ai", tags=["AI Student Solve"])
+
 
 
