@@ -3,7 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from app.auth.utils import get_current_user_optional
 from app.utils.logger import logger
-from .solver import solve_objective_for_student, solve_subjective_for_student
+from .solver import (
+    solve_objective_for_student,
+    solve_subjective_for_student,
+    answer_student_followup,
+)
 
 router = APIRouter()
 
@@ -87,3 +91,46 @@ async def solve_student_question_route(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI Solver error: {str(e)}",
         )
+
+
+class StudentFollowupRequest(BaseModel):
+    question_text: str
+    initial_solution: Optional[str] = None
+    chat_history: Optional[List[dict]] = None
+    user_message: str
+    subject_name: Optional[str] = None
+
+
+@router.post("/followup")
+async def student_followup_route(
+    body: StudentFollowupRequest,
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
+    """
+    On-demand interactive chat follow-up for students to ask doubts about an exam solution.
+    """
+    if not body.user_message or not body.user_message.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="user_message cannot be empty",
+        )
+
+    try:
+        reply = await answer_student_followup(
+            question_text=body.question_text,
+            initial_solution=body.initial_solution,
+            chat_history=body.chat_history,
+            user_message=body.user_message,
+            subject_name=body.subject_name,
+        )
+        return {
+            "success": True,
+            "reply": reply,
+        }
+    except Exception as e:
+        logger.error(f"Error in student followup endpoint: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Follow-up tutor error: {str(e)}",
+        )
+

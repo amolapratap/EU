@@ -10,7 +10,11 @@ from google.genai import types
 
 from app.config import settings
 from app.utils.logger import logger
-from .prompts import STUDENT_OBJECTIVE_PROMPT, STUDENT_SUBJECTIVE_PROMPT
+from .prompts import (
+    STUDENT_OBJECTIVE_PROMPT,
+    STUDENT_SUBJECTIVE_PROMPT,
+    STUDENT_FOLLOWUP_PROMPT,
+)
 
 CANDIDATE_MODELS = [
     "gemini-3.1-flash-lite",
@@ -248,3 +252,65 @@ async def solve_subjective_for_student(
             })
 
     return solution_blocks
+
+
+async def answer_student_followup(
+    question_text: str,
+    initial_solution: Optional[str],
+    chat_history: Optional[List[Dict[str, str]]],
+    user_message: str,
+    subject_name: Optional[str] = None,
+) -> str:
+    """Answers a student's follow-up question regarding a problem and its solution."""
+    client = get_genai_client()
+
+    context_lines = []
+    if subject_name:
+        context_lines.append(f"Subject: {subject_name}")
+    context_lines.append(f"Original Exam Question:\n{question_text}")
+    if initial_solution:
+        context_lines.append(f"Provided Solution:\n{initial_solution}")
+
+    formatted_context = "\n\n".join(context_lines)
+
+    conversation_contents = [
+        f"--- CONTEXT ---\n{formatted_context}\n--- END CONTEXT ---",
+        "The student is studying the above question and solution and has follow-up doubts or questions.",
+    ]
+
+    if chat_history:
+        for msg in chat_history:
+            role = msg.get("role", "user")
+            content = msg.get("content", "").strip()
+            if role == "user":
+                conversation_contents.append(f"Student: {content}")
+            else:
+                conversation_contents.append(f"Tutor: {content}")
+
+    conversation_contents.append(f"Student: {user_message.strip()}\nTutor:")
+    full_prompt = "\n\n".join(conversation_contents)
+
+    error_records = []
+    for model_name in CANDIDATE_MODELS:
+        try:
+            res = await asyncio.wait_for(
+                client.aio.models.generate_content(
+                    model=model_name,
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=STUDENT_FOLLOWUP_PROMPT,
+                        temperature=0.3,
+                    ),
+                ),
+                timeout=30.0,
+            )
+            if res.text:
+                return res.text.strip()
+        except Exception as e:
+            error_records.append(f"{model_name}: {e}")
+            logger.warning(f"Student follow-up failed on {model_name}: {e}")
+
+    raise RuntimeError(
+        f"Follow-up solver failed across all models: {'; '.join(error_records)}"
+    )
+
