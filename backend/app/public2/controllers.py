@@ -568,11 +568,11 @@ async def get_latest_app_version():
         "latestVersionCode": 22,
         "minRequiredVersion": "1.0.0",
         "title": "Update Available (v1.2.1)",
-        "message": "A new update is live on Google Play with Ask AI on-demand question solutions and interactive follow-ups!",
+        "message": "A new update is live on Google Play with bug fixes and performance improvements!",
         "releaseNotes": [
-            "Ask AI: Instant verified question solutions and step-by-step explanations",
-            "Interactive Follow-Up: Ask doubts directly regarding any exam problem",
-            "Enhanced performance & smooth UI updates"
+            "Performance improvements and faster question paper loading",
+            "Bug fixes and UI stability enhancements",
+            "General polish and improved reading experience"
         ],
         "storeUrl": "https://play.google.com/store/apps/details?id=in.alpharesult.app",
         "isForceUpdate": False
