@@ -1752,16 +1752,15 @@ async def update_app_version_config(body: dict, admin: dict):
     """
     version_data = {
         "app_id": "in.alpharesult.app",
-        "latestVersion": str(body.get("latestVersion", "1.2.0")),
-        "latestVersionCode": int(body.get("latestVersionCode", 19)),
+        "latestVersion": str(body.get("latestVersion", "1.2.1")),
+        "latestVersionCode": int(body.get("latestVersionCode", 22)),
         "minRequiredVersion": str(body.get("minRequiredVersion", "1.0.0")),
-        "title": str(body.get("title", "Update Available")),
-        "message": str(body.get("message", "A new version of Alpha Result is available on Google Play.")),
+        "title": str(body.get("title", "Update Available (v1.2.1)")),
+        "message": str(body.get("message", "A new update is live on Google Play with Ask AI on-demand question solutions and interactive follow-ups!")),
         "releaseNotes": body.get("releaseNotes", [
-            "New CBT Quiz: Practice objective PYQs with timer & verified solutions",
-            "Clear Formulas & Diagrams: Crisp equation rendering and zoomable technical diagrams",
-            "Attendance Snapshots: Save and share attendance records as images",
-            "Performance & Storage: Clear test history easily & faster load times"
+            "Ask AI: Instant verified question solutions and step-by-step explanations",
+            "Interactive Follow-Up: Ask doubts directly regarding any exam problem",
+            "Enhanced performance & smooth UI updates"
         ]),
         "storeUrl": str(body.get("storeUrl", "https://play.google.com/store/apps/details?id=in.alpharesult.app")),
         "isForceUpdate": bool(body.get("isForceUpdate", False)),

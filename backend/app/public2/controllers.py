@@ -561,19 +561,18 @@ submit_question_report = submit_report
 async def get_latest_app_version():
     """
     Returns app version manifest for mobile app in-app update prompts.
-    Reads dynamically from db.app_version or returns current 1.2.0 defaults.
+    Reads dynamically from db.app_version or returns current 1.2.1 defaults.
     """
     default_manifest = {
-        "latestVersion": "1.2.0",
-        "latestVersionCode": 19,
+        "latestVersion": "1.2.1",
+        "latestVersionCode": 22,
         "minRequiredVersion": "1.0.0",
-        "title": "Update Available",
-        "message": "A new version of Alpha Result is available on Google Play.",
+        "title": "Update Available (v1.2.1)",
+        "message": "A new update is live on Google Play with Ask AI on-demand question solutions and interactive follow-ups!",
         "releaseNotes": [
-            "New CBT Quiz: Practice objective PYQs with timer & verified solutions",
-            "Clear Formulas & Diagrams: Crisp equation rendering and zoomable technical diagrams",
-            "Attendance Snapshots: Save and share attendance records as images",
-            "Performance & Storage: Clear test history easily & faster load times"
+            "Ask AI: Instant verified question solutions and step-by-step explanations",
+            "Interactive Follow-Up: Ask doubts directly regarding any exam problem",
+            "Enhanced performance & smooth UI updates"
         ],
         "storeUrl": "https://play.google.com/store/apps/details?id=in.alpharesult.app",
         "isForceUpdate": False
