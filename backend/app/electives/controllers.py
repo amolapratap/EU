@@ -81,28 +81,34 @@ async def get_v2_subjects_ctrl(semester_code: Union[str, int], branch_code: str)
                 oid = sid
             else:
                 oid = None
-            if oid and oid in subject_dict:
+            cs = subject_dict.get(oid) if oid else None
+            if cs:
+                if eg_credit is None and cs.get("subject_credit"):
+                    try:
+                        eg_credit = float(cs["subject_credit"])
+                    except (ValueError, TypeError):
+                        eg_credit = 3.0
+                    eg_type = cs.get("subject_type", "Theory")
+                    try:
+                        eg_max_marks = int(cs.get("max_marks", 100))
+                    except (ValueError, TypeError):
+                        eg_max_marks = 100
+
             child_dict = {
                 "subject_id": str(oid) if oid else str(child.get("subject_id", "")),
                 "_id": str(oid) if oid else str(child.get("subject_id", "")),
-                "code": cs.get("code") if oid and oid in subject_dict else child.get("code", ""),
-                "short_name": (cs.get("short_name") or child.get("short_name")) if oid and oid in subject_dict else child.get("short_name", ""),
-                "full_name": (cs.get("name") or cs.get("full_name") or child.get("full_name")) if oid and oid in subject_dict else child.get("full_name", ""),
-                "name": (cs.get("name") or cs.get("full_name") or child.get("full_name")) if oid and oid in subject_dict else child.get("full_name", ""),
-                "subject_credit": cs.get("subject_credit") if oid and oid in subject_dict else child.get("subject_credit", "3"),
-                "subject_type": cs.get("subject_type", "Theory") if oid and oid in subject_dict else child.get("subject_type", "Theory"),
-                "max_marks": cs.get("max_marks", 100) if oid and oid in subject_dict else child.get("max_marks", 100),
+                "code": cs.get("code") if cs else child.get("code", ""),
+                "short_name": (cs.get("short_name") or child.get("short_name")) if cs else child.get("short_name", ""),
+                "full_name": (cs.get("name") or cs.get("full_name") or child.get("full_name")) if cs else child.get("full_name", ""),
+                "name": (cs.get("name") or cs.get("full_name") or child.get("full_name")) if cs else child.get("full_name", ""),
+                "subject_credit": cs.get("subject_credit") if cs else child.get("subject_credit", "3"),
+                "subject_type": cs.get("subject_type", "Theory") if cs else child.get("subject_type", "Theory"),
+                "max_marks": cs.get("max_marks", 100) if cs else child.get("max_marks", 100),
                 "group_id": str(eg["_id"]),
                 "group_code": eg.get("code") or eg.get("short_name") or "ELECTIVE",
                 "group_name": eg.get("full_name") or eg.get("group_name") or eg.get("short_name") or "Elective Group",
                 "is_elective": True,
             }
-            if oid and oid in subject_dict:
-                cs = subject_dict[oid]
-                if eg_credit is None and cs.get("subject_credit"):
-                    eg_credit = float(cs["subject_credit"])
-                    eg_type = cs.get("subject_type", "Theory")
-                    eg_max_marks = int(cs.get("max_marks", 100))
             enriched_children.append(child_dict)
         
         eg["subjects"] = enriched_children
