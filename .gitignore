@@ -19,3 +19,10 @@ venv/
 # OS
 .DS_Store
 
+# External / Local work files
+*.pdf
+local/
+scratch/
+tmp/
+temp/
+*.tmp

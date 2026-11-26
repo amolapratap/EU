@@ -12,6 +12,7 @@ dnspython==2.6.1
 httpx>=0.28.1
 cloudinary==1.40.0
 pymupdf==1.26.7
+pillow>=10.0.0
 requests>=2.31.0
 apscheduler
 reportlab>=4.0.0

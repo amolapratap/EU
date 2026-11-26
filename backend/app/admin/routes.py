@@ -4,6 +4,9 @@ from app.auth.utils import get_current_admin
 from app.admin.controllers import *
 from fastapi import Form
 from typing import Optional
+import os
+import re
+from app.utils.pdf_rebrand import rebrand_pdf_bytes, RebrandOptions, DEFAULT_APP_URL
 from app.admin.ai_controllers import (
     ai_extract_paper_questions,
     ai_save_extracted_questions,
@@ -240,6 +243,73 @@ async def process_pdf(
     ):
     # admin=Depends(get_current_admin),
     return await call_pdf_service(file, admin)
+
+
+@router.post("/pdf/rebrand")
+async def rebrand_pdf_route(
+    file: UploadFile = File(...),
+    remove_links: bool = Form(True),
+    remove_annotations: bool = Form(True),
+    remove_watermark_images: bool = Form(True),
+    remove_all_images: bool = Form(False),
+    remove_text_watermarks: bool = Form(True),
+    custom_remove_texts: str = Form(""),
+    add_watermark: bool = Form(True),
+    watermark_opacity: float = Form(0.22),
+    add_header: bool = Form(True),
+    add_footer_banner: bool = Form(True),
+    app_url: str = Form(DEFAULT_APP_URL),
+    admin=Depends(get_current_admin),
+):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    raw_bytes = await file.read()
+    if not raw_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded PDF is empty")
+
+    custom_terms = tuple(
+        t.strip() for t in re.split(r"[,\n]+", custom_remove_texts) if t.strip()
+    )
+    options = RebrandOptions(
+        remove_links=remove_links,
+        remove_annotations=remove_annotations,
+        remove_watermark_images=remove_watermark_images,
+        remove_all_images=remove_all_images,
+        remove_text_watermarks=remove_text_watermarks,
+        custom_remove_texts=custom_terms,
+        add_watermark=add_watermark,
+        watermark_opacity=watermark_opacity,
+        add_header=add_header,
+        add_footer_banner=add_footer_banner,
+        app_url=app_url,
+    )
+
+    try:
+        out_bytes, stats = rebrand_pdf_bytes(raw_bytes, options)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to process PDF: {exc}")
+
+    base_name = os.path.splitext(os.path.basename(file.filename))[0]
+    safe_base = re.sub(r"[^A-Za-z0-9._-]+", "_", base_name).strip("_") or "document"
+    out_filename = f"{safe_base}_AlphaResult.pdf"
+
+    return Response(
+        content=out_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{out_filename}"',
+            "Access-Control-Expose-Headers": (
+                "Content-Disposition, X-Page-Count, X-Removed-Links, "
+                "X-Removed-Annotations, X-Removed-Images, X-Removed-Text-Matches"
+            ),
+            "X-Page-Count": str(stats.page_count),
+            "X-Removed-Links": str(stats.removed_links),
+            "X-Removed-Annotations": str(stats.removed_annotations),
+            "X-Removed-Images": str(stats.removed_images),
+            "X-Removed-Text-Matches": str(stats.removed_text_matches),
+        },
+    )
 
 
 
